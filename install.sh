@@ -1,4 +1,8 @@
 #!/bin/bash
+# Repository and branch used by this fork's installer.
+INSTALL_REPO="OneLegChicken/mirzabot"
+INSTALL_BRANCH="feature/solidlayer-panel"
+
 # Checking Root Access
 if [[ $EUID -ne 0 ]]; then
     echo -e "\033[31m[ERROR]\033[0m Please run this script as \033[1mroot\033[0m."
@@ -301,7 +305,7 @@ _link_mirza() {
 function self_update_script() {
     local MASTER_PATH="/root/install.sh"
     local BIN_LINK="/usr/local/bin/mirza"
-    local URL="https://raw.githubusercontent.com/mahdiMGF2/mirzabot/main/install.sh"
+    local URL="https://raw.githubusercontent.com/${INSTALL_REPO}/${INSTALL_BRANCH}/install.sh"
     local TEMP_FILE="/tmp/mirzabot_update.sh"
 
     # Make sure DNS works before reaching GitHub
@@ -367,7 +371,7 @@ self_update_script "$@"
 # ── Repo / paths ─────────────────────────────────────────────
 BOT_DIR_DEFAULT="/var/www/html/mirzaprobotconfig"
 CONFIG_FILE_DEFAULT="$BOT_DIR_DEFAULT/config.php"
-GIT_REPO="mahdiMGF2/mirzabot"
+GIT_REPO="$INSTALL_REPO"
 LATEST_CACHE="/tmp/.mirza_latest_version"
 IP_CACHE="/tmp/.mirza_server_ip"
 
@@ -1017,7 +1021,7 @@ list_tags_desc() {
 # Returns: 0 = chosen, 1 = error, 2 = back to menu
 choose_source() {
     SRC_ZIP_URL=""; SRC_LABEL=""
-    local beta="https://github.com/${GIT_REPO}/archive/refs/heads/main.zip"
+    local beta="https://github.com/${GIT_REPO}/archive/refs/heads/${INSTALL_BRANCH}.zip"
     local tagbase="https://github.com/${GIT_REPO}/archive/refs/tags"
 
     # ── Non-interactive (flags) ──────────────────────────────
@@ -1033,11 +1037,11 @@ choose_source() {
     fi
     if [ -n "$ARG_CHANNEL" ]; then
         case "$ARG_CHANNEL" in
-            beta|main)      SRC_ZIP_URL="$beta"; SRC_LABEL="Beta (main)"; return 0 ;;
+            beta|main)      SRC_ZIP_URL="$beta"; SRC_LABEL="Feature branch (${INSTALL_BRANCH})"; return 0 ;;
             release|auto|latest|stable)
                 local l; l=$(get_latest_version)
                 if [ -n "$l" ]; then SRC_ZIP_URL="${tagbase}/${l}.zip"; SRC_LABEL="Release ${l}";
-                else SRC_ZIP_URL="$beta"; SRC_LABEL="Beta (main)"; fi
+                else SRC_ZIP_URL="$beta"; SRC_LABEL="Feature branch (${INSTALL_BRANCH})"; fi
                 return 0 ;;
             *) echo -e " ${C_BAD}Unknown channel: ${ARG_CHANNEL}${CR}"; return 1 ;;
         esac
@@ -1047,7 +1051,7 @@ choose_source() {
     _sec "Select version"
     _mi "1" "Automatic  ${C_DIM}(latest stable release)${CR}"
     _mi "2" "Choose a specific release version"
-    _mi "3" "Beta       ${C_DIM}(latest main branch - may be unstable)${CR}"
+    _mi "3" "Feature    ${C_DIM}(${INSTALL_BRANCH} - may be unstable)${CR}"
     _mi "0" "Back to menu"
     echo ""
     printf " ${C_PROMPT}❯${CR} Select ${C_DIM}[0-3]${CR}: "
@@ -1059,7 +1063,7 @@ choose_source() {
             if [ -n "$l" ]; then SRC_ZIP_URL="${tagbase}/${l}.zip"; SRC_LABEL="Release ${l}";
             else
                 echo -e " ${C_WARN}Could not detect latest release; falling back to Beta.${CR}"
-                SRC_ZIP_URL="$beta"; SRC_LABEL="Beta (main)"
+                SRC_ZIP_URL="$beta"; SRC_LABEL="Feature branch (${INSTALL_BRANCH})"
             fi
             return 0 ;;
         2)
@@ -1087,7 +1091,7 @@ choose_source() {
             local c="${TAGS[$((V-1))]}"
             SRC_ZIP_URL="${tagbase}/${c}.zip"; SRC_LABEL="Release ${c}"
             return 0 ;;
-        3) SRC_ZIP_URL="$beta"; SRC_LABEL="Beta (main)"; return 0 ;;
+        3) SRC_ZIP_URL="$beta"; SRC_LABEL="Feature branch (${INSTALL_BRANCH})"; return 0 ;;
         *) echo -e " ${C_BAD}Invalid selection.${CR}"; return 1 ;;
     esac
 }
@@ -2974,7 +2978,7 @@ function migrate_to_pro() {
     NEW_BOT_DIR="/var/www/html/mirzaprobotconfig"
     rm -rf "$OLD_BOT_DIR"
     mkdir -p "$NEW_BOT_DIR"
-    ZIP_URL="https://github.com/mahdiMGF2/mirzabot/archive/refs/heads/main.zip"
+    ZIP_URL="https://github.com/${INSTALL_REPO}/archive/refs/heads/${INSTALL_BRANCH}.zip"
     TEMP_DIR="/tmp/mirzabot_mig"
     mkdir -p "$TEMP_DIR"
     run_step "Downloading Mirza source" "wget -q -O '$TEMP_DIR/bot.zip' '$ZIP_URL'" \
