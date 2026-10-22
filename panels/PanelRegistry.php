@@ -15,7 +15,9 @@ class PanelRegistry
         'rebecca' => 'Rebeca',
         'nexora' => 'Nexora',
         'wg_mate' => 'WGMate',
-        'solidlayer' => 'SolidLayer',
+        'guard' => 'Guard',
+        // Keep existing installations that stored the previous panel key working.
+        'solidlayer' => 'Guard',
     ];
 
     private static $instances = [];

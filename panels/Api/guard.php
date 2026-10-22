@@ -1,10 +1,10 @@
 <?php
 
-function request_solidlayer($location, $method, $path, $body = null)
+function request_guard($location, $method, $path, $body = null)
 {
     $panel = select("marzban_panel", "*", "name_panel", $location, "select");
     if (!$panel || empty($panel['url_panel']) || empty($panel['password_panel'])) {
-        return array('status' => null, 'body' => null, 'error' => 'SolidLayer URL or API key is missing');
+        return array('status' => null, 'body' => null, 'error' => 'Guard URL or API key is missing');
     }
 
     $ch = curl_init(rtrim($panel['url_panel'], '/') . '/api' . $path);
@@ -34,9 +34,9 @@ function request_solidlayer($location, $method, $path, $body = null)
     return array('status' => $status, 'body' => $response);
 }
 
-function getuser_solidlayer($username, $location)
+function getuser_guard($username, $location)
 {
-    $response = request_solidlayer($location, 'GET', '/subscriptions?limit=100&usernames=' . rawurlencode($username));
+    $response = request_guard($location, 'GET', '/subscriptions?limit=100&usernames=' . rawurlencode($username));
     $response['user'] = null;
     $data = json_decode($response['body'] ?? '', true);
     foreach (($data['items'] ?? array()) as $item) {
@@ -52,7 +52,7 @@ function getuser_solidlayer($username, $location)
     return $response;
 }
 
-function solidlayer_error($response)
+function guard_error($response)
 {
     if (!empty($response['error'])) {
         return $response['error'];
@@ -67,9 +67,9 @@ function solidlayer_error($response)
     return 'error code : ' . ($response['status'] ?? 'unknown');
 }
 
-function solidlayer_links($username, $location)
+function guard_links($username, $location)
 {
-    $response = request_solidlayer($location, 'GET', '/subscriptions/' . rawurlencode($username) . '/links');
+    $response = request_guard($location, 'GET', '/subscriptions/' . rawurlencode($username) . '/links');
     if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
         return array();
     }
@@ -79,7 +79,7 @@ function solidlayer_links($username, $location)
     }, $data['links'] ?? array())));
 }
 
-function solidlayer_service_ids($product, $panel)
+function guard_service_ids($product, $panel)
 {
     $raw = !empty($product['inbounds']) ? $product['inbounds'] : ($panel['proxies'] ?? '');
     $value = is_array($raw) ? $raw : json_decode((string) $raw, true);
@@ -96,7 +96,7 @@ function solidlayer_service_ids($product, $panel)
     })));
 }
 
-function status_solidlayer(array $user)
+function status_guard(array $user)
 {
     if (empty($user['enabled'])) {
         return 'disabled';

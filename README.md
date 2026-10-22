@@ -99,7 +99,7 @@ Mirza Bot integrates with the most popular VPN and network management panels:
 | 🟢 **WGDashboard** (WireGuard) | 🟢 **MikroTik** |
 | 🟢 **IBSng** | 🟢 **Pasarguard** |
 | 🟢 **Nexora** | 🟢 **WG-Mate** |
-| 🟢 **Rebecca** | 🟢 **SolidLayer** |
+| 🟢 **Rebecca** | 🟢 **Guard** |
 
 > Configs are generated automatically and are compatible with all common protocols.
 
