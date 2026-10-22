@@ -1079,6 +1079,7 @@ $panelOptionRows = [
 $panelOptionRows['mikrotik'] = $panelOptionRows['ibsng'];
 $panelOptionRows['nexora'] = $panelOptionRows['rebecca'];
 $panelOptionRows['wg_mate'] = $panelOptionRows['rebecca'];
+$panelOptionRows['solidlayer'] = $panelOptionRows['rebecca'];
 $panelOptions = [];
 foreach ($panelOptionRows as $panelType => $panelRows) {
     $panelKeyboardRows = [[['text' => $textbotlang['keyboard']['panelFeatureStatus']]]];
@@ -1179,6 +1180,9 @@ $keyboardtypepanel = json_encode([
         ],
         [
             ['text' => "WG-Mate", 'callback_data' => 'typepanel#wg_mate']
+        ],
+        [
+            ['text' => $textbotlang['keyboard']['solidlayer'] ?? 'SolidLayer', 'callback_data' => 'typepanel#solidlayer']
         ],
         [
             ['text' => $textbotlang['Admin']['backAdminBtn'], 'callback_data' => 'admin']

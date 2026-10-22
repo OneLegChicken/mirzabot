@@ -756,7 +756,7 @@ if ($datain == "paygwback") {
 } elseif ($text == $textbotlang['Admin']['btnKeyboard']['addPanel'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['Inbound']['getPanelType'], $keyboardtypepanel, 'HTML');
 } elseif (preg_match('/^typepanel#(.+)$/', $datain, $dataget) && $adminrulecheck['rule'] == "administrator") {
-    if (!in_array($dataget[1], ["marzban", "marzneshin", "pasarguard", "mirza_agent", "x-ui_single", "Manualsale", "hiddify", "WGDashboard", "ibsng", "mikrotik", "rebecca", "nexora", "wg_mate"], true)) {
+    if (!in_array($dataget[1], ["marzban", "marzneshin", "pasarguard", "mirza_agent", "x-ui_single", "Manualsale", "hiddify", "WGDashboard", "ibsng", "mikrotik", "rebecca", "nexora", "wg_mate", "solidlayer"], true)) {
         return;
     }
     deletemessage($from_id, $message_id);
@@ -799,7 +799,7 @@ if ($datain == "paygwback") {
         savedata("save", "username", "null");
         savedata("save", "password", "null");
         finishAddPanel();
-    } elseif (in_array($paneltype, ["WGDashboard", "x-ui_single", "mirza_agent", "rebecca", "nexora", "wg_mate"], true)) {
+    } elseif (in_array($paneltype, ["WGDashboard", "x-ui_single", "mirza_agent", "rebecca", "nexora", "wg_mate", "solidlayer"], true)) {
         savedata("save", "username", "null");
         sendmessage($from_id, $textbotlang['Admin']['agentbot']['askToken'], $backadmin, 'HTML');
         step('add_password_panel', $from_id);
@@ -2665,8 +2665,8 @@ elseif ($datain == "systemsms") {
             $total_memory = round($result['total-memory'] / pow(1024, 3), 2);
             sendmessage($from_id, sprintf($textbotlang['Admin']['stats']['mikrotik'], $result['platform'], $result['version'], $result['uptime'], $result['architecture-name'], $result['board-name'], $result['build-time'], $result['cpu'], $result['cpu-count'], $result['cpu-frequency'], $result['cpu-load'], $total_hdd_space, $free_hdd_space, $total_memory, $free_memory, $result['write-sect-since-reboot'], $result['write-sect-total']), $panelOptions['mikrotik'], 'HTML');
         }
-    } elseif (in_array($marzban_list_get['type'], ["rebecca", "nexora", "wg_mate"])) {
-        $Check_connection = $marzban_list_get['type'] == "nexora" ? request_nexora($marzban_list_get['name_panel'], "GET", '/me') : ($marzban_list_get['type'] == "wg_mate" ? request_wgmate($marzban_list_get['name_panel'], "GET", '/auth/me') : Get_System_Stats_rebecca($marzban_list_get['name_panel']));
+    } elseif (in_array($marzban_list_get['type'], ["rebecca", "nexora", "wg_mate", "solidlayer"])) {
+        $Check_connection = $marzban_list_get['type'] == "nexora" ? request_nexora($marzban_list_get['name_panel'], "GET", '/me') : ($marzban_list_get['type'] == "wg_mate" ? request_wgmate($marzban_list_get['name_panel'], "GET", '/auth/me') : ($marzban_list_get['type'] == "solidlayer" ? request_solidlayer($marzban_list_get['name_panel'], "GET", '/admins/current') : Get_System_Stats_rebecca($marzban_list_get['name_panel'])));
         if (empty($Check_connection['error']) && (empty($Check_connection['status']) || $Check_connection['status'] < 400)) {
             $ListSell = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = ? AND name_product != ?");
             $ListSell->bindValue(1, $marzban_list_get['name_panel'], PDO::PARAM_STR);
@@ -2679,13 +2679,13 @@ elseif ($datain == "systemsms") {
             $ListSellSum->execute();
             $ListSellSUM = number_format($ListSellSum->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'] ?? 0);
             $text_marzban = sprintf($textbotlang['Admin']['stats']['panelSales'], $ListSell, $ListSellSUM, $marzban_list_get['agent']);
-            sendmessage($from_id, $text_marzban, $panelOptions['rebecca'], 'HTML');
+            sendmessage($from_id, $text_marzban, $panelOptions[$marzban_list_get['type']], 'HTML');
         } elseif (!empty($Check_connection['status']) && $Check_connection['status'] == 401) {
             $text_marzban = $textbotlang['Admin']['managepanel']['invalidToken'];
-            sendmessage($from_id, $text_marzban, $panelOptions['rebecca'], 'HTML');
+            sendmessage($from_id, $text_marzban, $panelOptions[$marzban_list_get['type']], 'HTML');
         } else {
             $text_marzban = !empty($Check_connection['error']) ? panelErrorText($Check_connection['error']) : $textbotlang['Admin']['managepanel']['errorStatusPanel'] . json_encode($Check_connection);
-            sendmessage($from_id, $text_marzban, $panelOptions['rebecca'], 'HTML');
+            sendmessage($from_id, $text_marzban, $panelOptions[$marzban_list_get['type']], 'HTML');
         }
     } else {
         sendmessage($from_id, $textbotlang['Admin']['selectOption2'], $panelOptions['marzban'], 'HTML');
@@ -7068,7 +7068,10 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     if ($text == $textbotlang['Admin']['managepanel']['btnSetGroupName']) {
         $textsetprotocol = $textbotlang['Admin']['managepanel']['askGroupName'];
     } else {
-        $textsetprotocol = $textbotlang['Admin']['managepanel']['askProtocolSetup'];
+        $currentPanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+        $textsetprotocol = ($currentPanel['type'] ?? '') == "solidlayer"
+            ? ($textbotlang['Admin']['managepanel']['solidLayerServiceId'] ?? 'Send a SolidLayer service ID.')
+            : $textbotlang['Admin']['managepanel']['askProtocolSetup'];
     }
     sendmessage($from_id, $textsetprotocol, $backadmin, 'HTML');
     step("setinboundandprotocol", $from_id);
@@ -7187,6 +7190,14 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         }
         update("marzban_panel", "proxies", json_encode([$userdata['service_id']]), "name_panel", $user['Processing_value']);
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['protocolSaved'], $panelOptions['rebecca'], 'HTML');
+    } elseif ($panel['type'] == "solidlayer") {
+        $serviceId = filter_var(trim($text), FILTER_VALIDATE_INT, array('options' => array('min_range' => 1)));
+        if ($serviceId === false) {
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['solidLayerInvalidServiceId'] ?? 'Enter a valid SolidLayer service ID.', $panelOptions['solidlayer'], 'HTML');
+            return;
+        }
+        update("marzban_panel", "proxies", json_encode(array((int) $serviceId)), "name_panel", $user['Processing_value']);
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['protocolSaved'], $panelOptions['solidlayer'], 'HTML');
     } else {
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['protocolSaved'], $panelOptions['marzban'], 'HTML');
     }
@@ -7457,7 +7468,11 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
     $text_order = sprintf($textbotlang['Admin']['Payment']['detailRow2'], $paymentUser['id_order'], $paymentUser['id_user'], $paymentUser['price'], $paymentUser['payment_Status'], $paymentUser['Payment_Method'], $paymentUser['time']);
     sendmessage($from_id, $text_order, null, 'HTML');
 } elseif ($text == $textbotlang['keyboard']['setInbound']) {
-    sendmessage($from_id, $textbotlang['Admin']['managepanel']['askConfigUsername'], $backadmin, 'HTML');
+    $productPanel = select("marzban_panel", "*", "code_panel", $user['Processing_value_one'], "select");
+    $prompt = ($productPanel['type'] ?? '') == "solidlayer"
+        ? ($textbotlang['Admin']['managepanel']['solidLayerServiceId'] ?? 'Send the SolidLayer service ID.')
+        : $textbotlang['Admin']['managepanel']['askConfigUsername'];
+    sendmessage($from_id, $prompt, $backadmin, 'HTML');
     step("getdatainboundproduct", $from_id);
 } elseif ($user['step'] == "getdatainboundproduct") {
     $marzban_list_get = select("marzban_panel", "*", "code_panel", $user['Processing_value_one']);
@@ -7509,6 +7524,13 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
             return;
         }
         $datainbound = json_encode($userdata['service_ids'], true);
+    } elseif ($marzban_list_get['type'] == "solidlayer") {
+        $serviceId = filter_var(trim($text), FILTER_VALIDATE_INT, array('options' => array('min_range' => 1)));
+        if ($serviceId === false) {
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['solidLayerInvalidServiceId'] ?? 'Enter a valid SolidLayer service ID.', $shopkeyboard, 'HTML');
+            return;
+        }
+        $datainbound = json_encode(array((int) $serviceId));
     } elseif ($marzban_list_get['type'] == "x-ui_single") {
         $data = get_clinets($text, $marzban_list_get);
         if (!empty($data['error'])) {

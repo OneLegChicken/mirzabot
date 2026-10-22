@@ -15,6 +15,7 @@ class PanelRegistry
         'rebecca' => 'Rebeca',
         'nexora' => 'Nexora',
         'wg_mate' => 'WGMate',
+        'solidlayer' => 'SolidLayer',
     ];
 
     private static $instances = [];
