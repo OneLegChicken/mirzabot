@@ -1,7 +1,7 @@
 #!/bin/bash
 # Repository and branch used by this fork's installer.
 INSTALL_REPO="OneLegChicken/mirzabot"
-INSTALL_BRANCH="experiment/mirza-features"
+INSTALL_BRANCH="feature/guard-panel"
 
 # Checking Root Access
 if [[ $EUID -ne 0 ]]; then
