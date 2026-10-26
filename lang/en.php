@@ -2374,7 +2374,6 @@ Current amount: %s',
                         'reportCron' => '📝 Notification reports',
                         'reportNight' => '🌙 Nightly report',
                         'btnDontShowAgain' => 'Don\'t show again ⛓️‍💥',
-                        'btnDonate' => '💖 Support (donate)',
                         'adminMenuHint' => '👇 Admin menu',
                         'msgHidden' => '
 
@@ -2400,16 +2399,6 @@ Current amount: %s',
 7 - Expired payments will be deleted
 8 - API logs older than 7 days will be deleted
 9 - Database tables will be optimized',
-                        'aboutBot' => '💎 | Version Bot: %s
-📌 | Version Mini App: 0.1.1
-
-<blockquote>🔹 | This bot is completely free and is developed by the Mirza team</blockquote>
-
-<blockquote>🔹 | Any sale or charging of money for this bot is considered a violation.</blockquote>
-
-<blockquote>🔹 | If you see any sale or charging of money, please track and reclaim your money.</blockquote>
-
-<blockquote>🐞 | To report a problem, message the <a href="https://t.me/mirzapanel?direct">Mirza channel direct</a>.</blockquote>',
                         'gatewayRow' => '
 📌 Gateway name: <code>%s</code>
  - Number of successful payments: <code>%s</code>

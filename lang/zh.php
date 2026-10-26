@@ -2374,7 +2374,6 @@ f,n.n2',
                         'reportCron' => '📝 通知报告',
                         'reportNight' => '🌙 夜间报告',
                         'btnDontShowAgain' => '不再显示 ⛓️‍💥',
-                        'btnDonate' => '💖 支持（捐赠）',
                         'adminMenuHint' => '👇 管理菜单',
                         'msgHidden' => '
 
@@ -2400,16 +2399,6 @@ f,n.n2',
 7 - 将删除已过期的付款
 8 - 将删除超过 7 天的 API 日志
 9 - 将优化数据库表',
-                        'aboutBot' => '💎 | Version Bot: %s
-📌 | Version Mini App: 0.1.1
-
-<blockquote>🔹 | 此机器人完全免费，由 Mirza 团队开发</blockquote>
-
-<blockquote>🔹 | 任何对此机器人的出售或收费均视为违规。</blockquote>
-
-<blockquote>🔹 | 如果您发现任何出售或收费行为，请追踪并追回您的款项。</blockquote>
-
-<blockquote>🐞 | 如需报告问题，请在 <a href="https://t.me/mirzapanel?direct">Mirza 频道私信</a> 中留言。</blockquote>',
                         'gatewayRow' => '
 📌 网关名称：<code>%s</code>
  - 成功支付次数：<code>%s</code>

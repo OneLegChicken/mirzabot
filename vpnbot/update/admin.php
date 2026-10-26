@@ -14,8 +14,7 @@ if (!in_array($from_id, $admin_idsmain) and !in_array($from_id, $admin_ids)) {
     return;
 }
 if (in_array($text, $textadmin) || $datain == "admin") {
-    $text_admin = "Version Bot : $version
-Panel Admin";
+    $text_admin = "Panel Admin";
     sendmessage($from_id, $text_admin, $keyboardadmin, 'HTML');
     step("home", $from_id);
     return;
