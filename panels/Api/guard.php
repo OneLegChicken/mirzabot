@@ -114,4 +114,3 @@ function status_guard(array $user)
     }
     return 'active';
 }
-
