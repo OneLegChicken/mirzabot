@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/../../telegram_button_styles.php';
 function isTelegramChatIdEmpty($chat_id): bool
 {
     if ($chat_id === null || $chat_id === false) {
@@ -28,6 +29,9 @@ function telegram($method, $datas = [],$botToken = null)
                 'description' => 'Bad Request: chat_id is empty'
             ];
         }
+    }
+    if (array_key_exists('reply_markup', $datas)) {
+        $datas['reply_markup'] = applySemanticTelegramButtonStyles($datas['reply_markup']);
     }
     $url = "https://api.telegram.org/bot" . $ApiToken . "/" . $method;
     $ch = curl_init();

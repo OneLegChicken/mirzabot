@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/telegram_button_styles.php';
 function isTelegramChatIdEmpty($chat_id): bool
 {
     if ($chat_id === null || $chat_id === false) {
@@ -172,6 +173,10 @@ function telegram($method, $datas = [], $token = null, $allowEmojiFallback = tru
 
     if (isset($datas['message_thread_id']) && intval($datas['message_thread_id']) <= 0) {
         unset($datas['message_thread_id']);
+    }
+
+    if (array_key_exists('reply_markup', $datas)) {
+        $datas['reply_markup'] = applySemanticTelegramButtonStyles($datas['reply_markup']);
     }
 
     $premiumEmojiPayload = null;
