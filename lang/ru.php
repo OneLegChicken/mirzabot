@@ -4030,6 +4030,7 @@ ID пользователя : %s
                 'guard' => 'Guard',
                 'reWebhookAgentBots' => '🔗 Повторный webhook ботов агентов',
                 'setBotCommands' => '⛏ Команды бота',
+                'apiToken' => '🔑 API токен',
                 'receiveMembershipGift' => '🎁 Получить подарок за членство',
                 'reconnectNode' => '♻️ Переподключить ноду',
                 'refresh' => '♻️ Обновить',
