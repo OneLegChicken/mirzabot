@@ -17,17 +17,17 @@
 </p>
 
 <p>
-  <a href="https://github.com/mahdiMGF2/mirzabot/stargazers">
-    <img src="https://img.shields.io/github/stars/mahdiMGF2/mirzabot?style=flat-square&color=f5c518" alt="Stars"/>
+  <a href="https://github.com/OneLegChicken/mirzabot/stargazers">
+    <img src="https://img.shields.io/github/stars/OneLegChicken/mirzabot?style=flat-square&color=f5c518" alt="Stars"/>
   </a>
-  <a href="https://github.com/mahdiMGF2/mirzabot/network/members">
-    <img src="https://img.shields.io/github/forks/mahdiMGF2/mirzabot?style=flat-square" alt="Forks"/>
+  <a href="https://github.com/OneLegChicken/mirzabot/network/members">
+    <img src="https://img.shields.io/github/forks/OneLegChicken/mirzabot?style=flat-square" alt="Forks"/>
   </a>
-  <a href="https://github.com/mahdiMGF2/mirzabot/issues">
-    <img src="https://img.shields.io/github/issues/mahdiMGF2/mirzabot?style=flat-square" alt="Issues"/>
+  <a href="https://github.com/OneLegChicken/mirzabot/issues">
+    <img src="https://img.shields.io/github/issues/OneLegChicken/mirzabot?style=flat-square" alt="Issues"/>
   </a>
-  <a href="https://github.com/mahdiMGF2/mirzabot/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/mahdiMGF2/mirzabot?style=flat-square" alt="License"/>
+  <a href="https://github.com/OneLegChicken/mirzabot/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/OneLegChicken/mirzabot?style=flat-square" alt="License"/>
   </a>
   <img src="https://img.shields.io/badge/PHP-8.5.12%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.5.12+"/>
 </p>
@@ -63,6 +63,8 @@
 It connects directly to your panels, builds configurations automatically, accepts a wide range of payment methods, and gives both customers and admins a clean experience through a **Telegram Mini App** and a **web admin panel**.
 
 > Whether you're handing out trial accounts or running a large-scale reseller business, Mirza Bot has the tools to run it end to end.
+
+This repository is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of [the upstream Mirza Bot project](https://github.com/mahdiMGF2/mirzabot). It adds Guard panel support and carries selected upstream updates on the experimental branch.
 
 ---
 
@@ -102,6 +104,25 @@ Mirza Bot integrates with the most popular VPN and network management panels:
 | 🟢 **Rebecca** | 🟢 **Guard** |
 
 > Configs are generated automatically and are compatible with all common protocols.
+
+### OneLegChicken fork: Guard integration
+
+The experimental branch adds a Guard panel driver to the Telegram bot:
+
+- Connect a Guard panel using its URL and API key.
+- Select Guard service IDs when configuring products.
+- Create subscriptions, retrieve configuration links, renew time or traffic, and manage subscription status or deletion.
+- For products with unlimited expiry, the Guard API identity must have permission to create subscriptions without an expiry date.
+
+The Guard integration has been tested against a live panel for connection, subscription creation, renewal and deletion.
+
+To install this experimental build on a fresh Ubuntu server as `root`:
+
+```bash
+curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/experiment/mirza-features/install.sh && bash install.sh
+```
+
+At the installer’s version prompt, choose **3 (Feature)**.
 
 ---
 

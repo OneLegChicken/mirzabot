@@ -127,6 +127,7 @@ if ($datain == "paygwback") {
     }
     activecron();
     sendmessage($from_id, $textbotlang['Admin']['report']['adminMenuHint'], $keyboardadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['report']['aboutBot'], null, 'HTML');
     $miniAppInstructionHidden = isset($user['hide_mini_app_instruction']) ? (string) $user['hide_mini_app_instruction'] : '0';
     if ($miniAppInstructionHidden !== '1') {
         $miniAppInstructionKeyboard = json_encode([
@@ -144,6 +145,7 @@ if ($datain == "paygwback") {
         return;
     }
     sendmessage($from_id, $textbotlang['Admin']['report']['adminMenuHint'], $keyboardadmin, 'HTML');
+    sendmessage($from_id, $textbotlang['Admin']['report']['aboutBot'], null, 'HTML');
     step('home', $from_id);
     return;
 } elseif ($datain == "hide_mini_app_instruction") {

@@ -2375,6 +2375,16 @@ Current amount: %s',
                         'reportNight' => '🌙 Nightly report',
                         'btnDontShowAgain' => 'Don\'t show again ⛓️‍💥',
                         'adminMenuHint' => '👇 Admin menu',
+                        'aboutBot' => '🛡 <b>Guard panel support</b>
+
+This OneLegChicken build adds Guard integration to Mirza Bot:
+• Connect with a Guard panel API key
+• Create subscriptions and retrieve config links
+• Renew time or traffic, and manage subscription status or deletion
+
+For unlimited expiry, the Guard API key must have permission to create subscriptions without an expiry date.
+
+<a href="https://github.com/OneLegChicken/mirzabot/tree/experiment/mirza-features">View this build on GitHub</a>',
                         'msgHidden' => '
 
 ✅ This message will no longer be shown to you.',

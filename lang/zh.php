@@ -2375,6 +2375,16 @@ f,n.n2',
                         'reportNight' => '🌙 夜间报告',
                         'btnDontShowAgain' => '不再显示 ⛓️‍💥',
                         'adminMenuHint' => '👇 管理菜单',
+                        'aboutBot' => '🛡 <b>Guard 面板支持</b>
+
+OneLegChicken 维护的此版本为 Mirza Bot 添加了 Guard 集成：
+• 使用 Guard 面板 API 密钥连接
+• 创建订阅并获取配置链接
+• 延长时长或流量、管理订阅状态并删除订阅
+
+如需创建不限期订阅，Guard API 密钥必须拥有设置无限期的权限。
+
+<a href="https://github.com/OneLegChicken/mirzabot/tree/experiment/mirza-features">在 GitHub 查看此版本</a>',
                         'msgHidden' => '
 
 ✅ 此消息将不再向您显示。',
