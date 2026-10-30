@@ -64,7 +64,7 @@ It connects directly to your panels, builds configurations automatically, accept
 
 > Whether you're handing out trial accounts or running a large-scale reseller business, Mirza Bot has the tools to run it end to end.
 
-This repository is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of [the upstream Mirza Bot project](https://github.com/mahdiMGF2/mirzabot). It adds Guard panel support and carries selected upstream updates on the experimental branch.
+This repository is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of [the upstream Mirza Bot project](https://github.com/mahdiMGF2/mirzabot). It adds Guard panel support and carries selected upstream updates on the fork’s main branch.
 
 ---
 
@@ -107,7 +107,7 @@ Mirza Bot integrates with the most popular VPN and network management panels:
 
 ### OneLegChicken fork: Guard integration
 
-The experimental branch adds a Guard panel driver to the Telegram bot:
+This fork adds a Guard panel driver to the Telegram bot:
 
 - Connect a Guard panel using its URL and API key.
 - Select Guard service IDs when configuring products.
@@ -119,7 +119,7 @@ The Guard integration has been tested against a live panel for connection, subsc
 To install this experimental build on a fresh Ubuntu server as `root`:
 
 ```bash
-curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/experiment/mirza-features/install.sh && bash install.sh
+curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/main/install.sh && bash install.sh
 ```
 
 At the installer’s version prompt, choose **3 (Feature)**.
@@ -199,7 +199,7 @@ At the installer’s version prompt, choose **3 (Feature)**.
 Run the following command on your server as **root**:
 
 ```bash
-curl -o install.sh -L https://raw.githubusercontent.com/mahdiMGF2/mirzabot/main/install.sh && bash install.sh
+curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/main/install.sh && bash install.sh
 ```
 
 An interactive menu will appear:
@@ -221,7 +221,7 @@ An interactive menu will appear:
 Run the same command and select **`2`**:
 
 ```bash
-curl -o install.sh -L https://raw.githubusercontent.com/mahdiMGF2/mirzabot/main/install.sh && bash install.sh
+curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/main/install.sh && bash install.sh
 ```
 
 ### Remove
@@ -325,6 +325,6 @@ Thanks to everyone who has contributed to making Mirza Bot better:
 
 **Made with ❤️ by the Mirza Panel community**
 
-📖 [Documentation](https://mirzabot.com/docs/) · 💬 [Channel](https://t.me/mirzapanel) · 👥 [Group](https://t.me/mirzapanelgroup) · ⭐ [Star on GitHub](https://github.com/mahdiMGF2/mirzabot)
+📖 [Documentation](https://mirzabot.com/docs/) · 💬 [Channel](https://t.me/mirzapanel) · 👥 [Group](https://t.me/mirzapanelgroup) · ⭐ [Star on GitHub](https://github.com/OneLegChicken/mirzabot)
 
 </div>

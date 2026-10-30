@@ -2380,7 +2380,7 @@ f,n.n2',
 
 برای اشتراک با زمان نامحدود، API Key باید اجازه ساخت اشتراک بدون تاریخ انقضا را داشته باشد.
 
-<a href="https://github.com/OneLegChicken/mirzabot/tree/experiment/mirza-features">مشاهده این نسخه در GitHub</a>',
+<a href="https://github.com/OneLegChicken/mirzabot/tree/main">مشاهده این نسخه در GitHub</a>',
                         'msgHidden' => '
 
 ✅ این پیام دیگر برای شما نمایش داده نخواهد شد.',

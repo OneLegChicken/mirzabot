@@ -2384,7 +2384,7 @@ This OneLegChicken build adds Guard integration to Mirza Bot:
 
 For unlimited expiry, the Guard API key must have permission to create subscriptions without an expiry date.
 
-<a href="https://github.com/OneLegChicken/mirzabot/tree/experiment/mirza-features">View this build on GitHub</a>',
+<a href="https://github.com/OneLegChicken/mirzabot/tree/main">View this build on GitHub</a>',
                         'msgHidden' => '
 
 ✅ This message will no longer be shown to you.',

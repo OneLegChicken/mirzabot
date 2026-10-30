@@ -2384,7 +2384,7 @@ f,n.n2',
 
 Для подписок без срока действия API-ключ должен иметь соответствующее разрешение.
 
-<a href="https://github.com/OneLegChicken/mirzabot/tree/experiment/mirza-features">Эта версия на GitHub</a>',
+<a href="https://github.com/OneLegChicken/mirzabot/tree/main">Эта версия на GitHub</a>',
                         'msgHidden' => '
 
 ✅ Это сообщение больше не будет вам показываться.',

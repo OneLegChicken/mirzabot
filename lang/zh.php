@@ -2384,7 +2384,7 @@ OneLegChicken 维护的此版本为 Mirza Bot 添加了 Guard 集成：
 
 如需创建不限期订阅，Guard API 密钥必须拥有设置无限期的权限。
 
-<a href="https://github.com/OneLegChicken/mirzabot/tree/experiment/mirza-features">在 GitHub 查看此版本</a>',
+<a href="https://github.com/OneLegChicken/mirzabot/tree/main">在 GitHub 查看此版本</a>',
                         'msgHidden' => '
 
 ✅ 此消息将不再向您显示。',
