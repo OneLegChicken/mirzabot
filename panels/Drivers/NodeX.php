@@ -1,6 +1,6 @@
 <?php
 
-class GuardPanelDriver extends BasePanelDriver
+class NodeXPanelDriver extends BasePanelDriver
 {
     public function create(array $vars)
     {
@@ -15,20 +15,20 @@ class GuardPanelDriver extends BasePanelDriver
             'note' => (string) ($vars['note'] ?? ''),
             'limit_usage' => (int) $vars['data_limit'],
             'limit_expire' => (int) $vars['expire'],
-            'services' => guard_service_ids($product, $panel)
+            'services' => nodex_service_ids($product, $panel)
         );
-        $response = request_guard($panel['name_panel'], 'POST', '/subscriptions', $request);
+        $response = request_nodex($panel['name_panel'], 'POST', '/subscriptions', $request);
         $rows = json_decode($response['body'] ?? '', true);
         $user = is_array($rows) && isset($rows[0]) ? $rows[0] : (is_array($rows) ? $rows : array());
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400 || empty($user['username'])) {
-            return array('status' => 'Unsuccessful', 'msg' => guard_error($response));
+            return array('status' => 'Unsuccessful', 'msg' => nodex_error($response));
         }
         $subscriptionUrl = $user['subscription_link'] ?? '';
         return array(
             'status' => 'successful',
             'username' => $user['username'],
             'subscription_url' => $invoice != false ? "https://$domain/sub/" . $invoice['id_invoice'] : $subscriptionUrl,
-            'configs' => guard_links($username, $panel['name_panel'])
+            'configs' => nodex_links($username, $panel['name_panel'])
         );
     }
 
@@ -36,22 +36,22 @@ class GuardPanelDriver extends BasePanelDriver
     {
         $panel = $vars['Get_Data_Panel'];
         $username = $vars['username'];
-        $response = getuser_guard($username, $panel['name_panel']);
+        $response = getuser_nodex($username, $panel['name_panel']);
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400 || !is_array($response['user'])) {
-            return array('status' => 'Unsuccessful', 'msg' => guard_error($response));
+            return array('status' => 'Unsuccessful', 'msg' => nodex_error($response));
         }
         $user = $response['user'];
         $expiry = !empty($user['limit_expire']) ? (int) $user['limit_expire'] : (!empty($user['expired_at']) ? strtotime($user['expired_at']) : 0);
         $invoice = $vars['invoice'];
         $domain = $vars['domainhosts'];
         return array(
-            'status' => status_guard($user),
+            'status' => status_nodex($user),
             'username' => $user['username'],
             'data_limit' => (int) ($user['limit_usage'] ?? 0),
             'expire' => $expiry ?: 0,
             'online_at' => $user['last_online_at'] ?? null,
             'used_traffic' => (int) ($user['total_usage'] ?? 0),
-            'links' => guard_links($username, $panel['name_panel']),
+            'links' => nodex_links($username, $panel['name_panel']),
             'subscription_url' => $invoice != false ? "https://$domain/sub/" . $invoice['id_invoice'] : ($user['subscription_link'] ?? ''),
             'sub_updated_at' => $user['updated_at'] ?? null,
             'sub_last_user_agent' => $user['last_client_agent'] ?? null,
@@ -64,14 +64,14 @@ class GuardPanelDriver extends BasePanelDriver
     {
         $username = $vars['username'];
         $panelName = $vars['name_panel'];
-        $response = request_guard($panelName, 'POST', '/subscriptions/revoke', array('usernames' => array($username)));
+        $response = request_nodex($panelName, 'POST', '/subscriptions/revoke', array('usernames' => array($username)));
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => 'Unsuccessful', 'msg' => guard_error($response));
+            return array('status' => 'Unsuccessful', 'msg' => nodex_error($response));
         }
         $user = $this->DataUser($panelName, $username);
         return array(
             'status' => 'successful',
-            'configs' => guard_links($username, $panelName),
+            'configs' => nodex_links($username, $panelName),
             'subscription_url' => $user['subscription_url'] ?? ''
         );
     }
@@ -80,9 +80,9 @@ class GuardPanelDriver extends BasePanelDriver
     {
         $panel = $vars['Get_Data_Panel'];
         $username = $vars['username'];
-        $response = request_guard($panel['name_panel'], 'DELETE', '/subscriptions', array('usernames' => array($username)));
+        $response = request_nodex($panel['name_panel'], 'DELETE', '/subscriptions', array('usernames' => array($username)));
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => 'Unsuccessful', 'msg' => guard_error($response));
+            return array('status' => 'Unsuccessful', 'msg' => nodex_error($response));
         }
         return array('status' => 'successful', 'username' => $username);
     }
@@ -107,9 +107,9 @@ class GuardPanelDriver extends BasePanelDriver
         if (count($data) === 1) {
             return array('status' => true, 'data' => null);
         }
-        $response = request_guard($name, 'PUT', '/subscriptions', $data);
+        $response = request_nodex($name, 'PUT', '/subscriptions', $data);
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => false, 'msg' => guard_error($response));
+            return array('status' => false, 'msg' => nodex_error($response));
         }
         return array('status' => true, 'data' => json_decode($response['body'] ?? '', true));
     }
@@ -118,9 +118,9 @@ class GuardPanelDriver extends BasePanelDriver
     {
         $username = $vars['username'];
         $enabled = $vars['DataUserOut']['status'] != 'active';
-        $response = request_guard($vars['name_panel'], 'POST', '/subscriptions/' . ($enabled ? 'enable' : 'disable'), array('usernames' => array($username)));
+        $response = request_nodex($vars['name_panel'], 'POST', '/subscriptions/' . ($enabled ? 'enable' : 'disable'), array('usernames' => array($username)));
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => 'Unsuccessful', 'msg' => guard_error($response));
+            return array('status' => 'Unsuccessful', 'msg' => nodex_error($response));
         }
         return array('status' => 'successful', 'msg' => null);
     }
@@ -128,9 +128,9 @@ class GuardPanelDriver extends BasePanelDriver
     public function resetUsage(array $vars)
     {
         $username = $vars['username'];
-        $response = request_guard($vars['panel']['name_panel'], 'POST', '/subscriptions/reset', array('usernames' => array($username)));
+        $response = request_nodex($vars['panel']['name_panel'], 'POST', '/subscriptions/reset', array('usernames' => array($username)));
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => false, 'msg' => guard_error($response));
+            return array('status' => false, 'msg' => nodex_error($response));
         }
         return array('status' => true, 'msg' => 'successful');
     }
@@ -160,14 +160,14 @@ class GuardPanelDriver extends BasePanelDriver
 
     private function updateLimits($panelName, $username, $dataLimit, $expiry)
     {
-        $response = request_guard($panelName, 'PUT', '/subscriptions', array(
+        $response = request_nodex($panelName, 'PUT', '/subscriptions', array(
             'usernames' => array($username),
             'limit_usage' => (int) $dataLimit,
             'limit_expire' => (int) $expiry,
             'enabled' => true
         ));
         if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => false, 'msg' => guard_error($response));
+            return array('status' => false, 'msg' => nodex_error($response));
         }
         return array('status' => true, 'msg' => 'successful');
     }

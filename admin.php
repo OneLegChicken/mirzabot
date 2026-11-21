@@ -755,7 +755,7 @@ if ($datain == "paygwback") {
 } elseif ($text == $textbotlang['Admin']['btnKeyboard']['addPanel'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['Inbound']['getPanelType'], $keyboardtypepanel, 'HTML');
 } elseif (preg_match('/^typepanel#(.+)$/', $datain, $dataget) && $adminrulecheck['rule'] == "administrator") {
-    if (!in_array($dataget[1], ["marzban", "marzneshin", "pasarguard", "mirza_agent", "x-ui_single", "Manualsale", "hiddify", "WGDashboard", "ibsng", "mikrotik", "rebecca", "nexora", "wg_mate", "guard"], true)) {
+    if (!in_array($dataget[1], ["marzban", "marzneshin", "pasarguard", "mirza_agent", "x-ui_single", "Manualsale", "hiddify", "WGDashboard", "ibsng", "mikrotik", "rebecca", "nexora", "wg_mate", "nodex", "guard"], true)) {
         return;
     }
     deletemessage($from_id, $message_id);
@@ -798,7 +798,7 @@ if ($datain == "paygwback") {
         savedata("save", "username", "null");
         savedata("save", "password", "null");
         finishAddPanel();
-    } elseif (in_array($paneltype, ["WGDashboard", "x-ui_single", "mirza_agent", "rebecca", "nexora", "wg_mate", "guard", "solidlayer"], true)) {
+    } elseif (in_array($paneltype, ["WGDashboard", "x-ui_single", "mirza_agent", "rebecca", "nexora", "wg_mate", "nodex", "guard", "solidlayer"], true)) {
         savedata("save", "username", "null");
         sendmessage($from_id, $textbotlang['Admin']['agentbot']['askToken'], $backadmin, 'HTML');
         step('add_password_panel', $from_id);
@@ -2676,8 +2676,8 @@ elseif ($datain == "systemsms") {
             $total_memory = round($result['total-memory'] / pow(1024, 3), 2);
             sendmessage($from_id, sprintf($textbotlang['Admin']['stats']['mikrotik'], $result['platform'], $result['version'], $result['uptime'], $result['architecture-name'], $result['board-name'], $result['build-time'], $result['cpu'], $result['cpu-count'], $result['cpu-frequency'], $result['cpu-load'], $total_hdd_space, $free_hdd_space, $total_memory, $free_memory, $result['write-sect-since-reboot'], $result['write-sect-total']), $panelOptions['mikrotik'], 'HTML');
         }
-    } elseif (in_array($marzban_list_get['type'], ["rebecca", "nexora", "wg_mate", "guard", "solidlayer"])) {
-        $Check_connection = $marzban_list_get['type'] == "nexora" ? request_nexora($marzban_list_get['name_panel'], "GET", '/me') : ($marzban_list_get['type'] == "wg_mate" ? request_wgmate($marzban_list_get['name_panel'], "GET", '/auth/me') : (in_array($marzban_list_get['type'], ["guard", "solidlayer"], true) ? request_guard($marzban_list_get['name_panel'], "GET", '/admins/current') : Get_System_Stats_rebecca($marzban_list_get['name_panel'])));
+    } elseif (in_array($marzban_list_get['type'], ["rebecca", "nexora", "wg_mate", "nodex", "guard", "solidlayer"])) {
+        $Check_connection = $marzban_list_get['type'] == "nexora" ? request_nexora($marzban_list_get['name_panel'], "GET", '/me') : ($marzban_list_get['type'] == "wg_mate" ? request_wgmate($marzban_list_get['name_panel'], "GET", '/auth/me') : (in_array($marzban_list_get['type'], ["nodex", "guard", "solidlayer"], true) ? request_nodex($marzban_list_get['name_panel'], "GET", '/admins/current') : Get_System_Stats_rebecca($marzban_list_get['name_panel'])));
         if (empty($Check_connection['error']) && (empty($Check_connection['status']) || $Check_connection['status'] < 400)) {
             $ListSell = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = ? AND name_product != ?");
             $ListSell->bindValue(1, $marzban_list_get['name_panel'], PDO::PARAM_STR);
@@ -7069,8 +7069,8 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         $textsetprotocol = $textbotlang['Admin']['managepanel']['askGroupName'];
     } else {
         $currentPanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
-        $textsetprotocol = in_array(($currentPanel['type'] ?? ''), ["guard", "solidlayer"], true)
-            ? ($textbotlang['Admin']['managepanel']['guardServiceId'] ?? 'Send a Guard service ID.')
+        $textsetprotocol = in_array(($currentPanel['type'] ?? ''), ["nodex", "guard", "solidlayer"], true)
+            ? ($textbotlang['Admin']['managepanel']['guardServiceId'] ?? 'Send a NodeX service ID.')
             : $textbotlang['Admin']['managepanel']['askProtocolSetup'];
     }
     sendmessage($from_id, $textsetprotocol, $backadmin, 'HTML');
@@ -7171,10 +7171,10 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         }
         update("marzban_panel", "proxies", json_encode([$userdata['service_id']]), "name_panel", $user['Processing_value']);
         sendmessage($from_id, $textbotlang['Admin']['managepanel']['protocolSaved'], $panelOptions['rebecca'], 'HTML');
-    } elseif (in_array($panel['type'], ["guard", "solidlayer"], true)) {
+    } elseif (in_array($panel['type'], ["nodex", "guard", "solidlayer"], true)) {
         $serviceId = filter_var(trim($text), FILTER_VALIDATE_INT, array('options' => array('min_range' => 1)));
         if ($serviceId === false) {
-            sendmessage($from_id, $textbotlang['Admin']['managepanel']['guardInvalidServiceId'] ?? 'Enter a valid Guard service ID.', $panelOptions[$panel['type']], 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['guardInvalidServiceId'] ?? 'Enter a valid NodeX service ID.', $panelOptions[$panel['type']], 'HTML');
             return;
         }
         update("marzban_panel", "proxies", json_encode(array((int) $serviceId)), "name_panel", $user['Processing_value']);
@@ -7450,8 +7450,8 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
     sendmessage($from_id, $text_order, null, 'HTML');
 } elseif ($text == $textbotlang['keyboard']['setInbound']) {
     $productPanel = select("marzban_panel", "*", "code_panel", $user['Processing_value_one'], "select");
-    $prompt = in_array(($productPanel['type'] ?? ''), ["guard", "solidlayer"], true)
-        ? ($textbotlang['Admin']['managepanel']['guardServiceId'] ?? 'Send the Guard service ID.')
+    $prompt = in_array(($productPanel['type'] ?? ''), ["nodex", "guard", "solidlayer"], true)
+        ? ($textbotlang['Admin']['managepanel']['guardServiceId'] ?? 'Send the NodeX service ID.')
         : $textbotlang['Admin']['managepanel']['askConfigUsername'];
     sendmessage($from_id, $prompt, $backadmin, 'HTML');
     step("getdatainboundproduct", $from_id);
@@ -7507,10 +7507,10 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
             return;
         }
         $datainbound = json_encode($userdata['service_ids'], true);
-    } elseif (in_array($marzban_list_get['type'], ["guard", "solidlayer"], true)) {
+    } elseif (in_array($marzban_list_get['type'], ["nodex", "guard", "solidlayer"], true)) {
         $serviceId = filter_var(trim($text), FILTER_VALIDATE_INT, array('options' => array('min_range' => 1)));
         if ($serviceId === false) {
-            sendmessage($from_id, $textbotlang['Admin']['managepanel']['guardInvalidServiceId'] ?? 'Enter a valid Guard service ID.', $shopkeyboard, 'HTML');
+            sendmessage($from_id, $textbotlang['Admin']['managepanel']['guardInvalidServiceId'] ?? 'Enter a valid NodeX service ID.', $shopkeyboard, 'HTML');
             return;
         }
         $datainbound = json_encode(array((int) $serviceId));

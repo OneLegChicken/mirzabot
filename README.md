@@ -58,7 +58,7 @@
 
 It connects to your panels, creates configs automatically, accepts many payment methods, and comes with a **Telegram Mini App** for customers and a **web admin panel** for you.
 
-This is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of the upstream Mirza Bot project. It includes Guard panel integration.
+This is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of the upstream Mirza Bot project. It includes NodeX panel integration.
 
 ---
 
@@ -89,7 +89,7 @@ The full manual is at **[mirzabot.com/docs](https://mirzabot.com/docs/)**: 61 pa
 | Nexora | WGDashboard (WireGuard) |
 | WG-Mate | MikroTik |
 | IBSng | Mirza Agent |
-| Manual sale | Guard (OneLegChicken fork) |
+| Manual sale | NodeX (OneLegChicken fork) |
 
 ---
 

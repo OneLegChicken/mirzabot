@@ -1,10 +1,10 @@
 <?php
 
-function request_guard($location, $method, $path, $body = null)
+function request_nodex($location, $method, $path, $body = null)
 {
     $panel = select("marzban_panel", "*", "name_panel", $location, "select");
     if (!$panel || empty($panel['url_panel']) || empty($panel['password_panel'])) {
-        return array('status' => null, 'body' => null, 'error' => 'Guard URL or API key is missing');
+        return array('status' => null, 'body' => null, 'error' => 'NodeX URL or API key is missing');
     }
 
     $ch = curl_init(rtrim($panel['url_panel'], '/') . '/api' . $path);
@@ -34,9 +34,9 @@ function request_guard($location, $method, $path, $body = null)
     return array('status' => $status, 'body' => $response);
 }
 
-function getuser_guard($username, $location)
+function getuser_nodex($username, $location)
 {
-    $response = request_guard($location, 'GET', '/subscriptions?limit=100&usernames=' . rawurlencode($username));
+    $response = request_nodex($location, 'GET', '/subscriptions?limit=100&usernames=' . rawurlencode($username));
     $response['user'] = null;
     $data = json_decode($response['body'] ?? '', true);
     foreach (($data['items'] ?? array()) as $item) {
@@ -52,7 +52,7 @@ function getuser_guard($username, $location)
     return $response;
 }
 
-function guard_error($response)
+function nodex_error($response)
 {
     if (!empty($response['error'])) {
         return $response['error'];
@@ -67,9 +67,9 @@ function guard_error($response)
     return 'error code : ' . ($response['status'] ?? 'unknown');
 }
 
-function guard_links($username, $location)
+function nodex_links($username, $location)
 {
-    $response = request_guard($location, 'GET', '/subscriptions/' . rawurlencode($username) . '/links');
+    $response = request_nodex($location, 'GET', '/subscriptions/' . rawurlencode($username) . '/links');
     if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
         return array();
     }
@@ -79,7 +79,7 @@ function guard_links($username, $location)
     }, $data['links'] ?? array())));
 }
 
-function guard_service_ids($product, $panel)
+function nodex_service_ids($product, $panel)
 {
     $raw = !empty($product['inbounds']) ? $product['inbounds'] : ($panel['proxies'] ?? '');
     $value = is_array($raw) ? $raw : json_decode((string) $raw, true);
@@ -96,7 +96,7 @@ function guard_service_ids($product, $panel)
     })));
 }
 
-function status_guard(array $user)
+function status_nodex(array $user)
 {
     if (empty($user['enabled'])) {
         return 'disabled';
