@@ -199,6 +199,7 @@ class ManagePanel
         update("invoice", "notifctions", $notifctions, 'id_invoice', $invoice['id_invoice']);
         $data_limit_old = $data_user['data_limit'];
         $time_old = $data_user['expire'];
+        $time_old_raw = $time_old; // real expiry, before it is clamped to "now" below
         $time_old = time() - $time_old > 0 ? time() : $time_old;
         $data_limit_new = $new_limit == 0 ? 0 : $new_limit * pow(1024, 3);
         $data_limit_new_add = $new_limit == 0 ? 0 : $data_limit_old + ($new_limit * pow(1024, 3));
@@ -215,6 +216,12 @@ class ManagePanel
         update("invoice", 'uuid', null, "username", $username);
         update("invoice", 'Status', "active", "username", $username);
         $Method_extend = extendMethodKey($Method_extend);
+        if ($Method_extend == "smartRenew") {
+            // Renewed before the period ended: carry over the remaining volume and time.
+            // Renewed after it ended: start completely fresh.
+            $alreadyExpired = intval($time_old_raw) > 0 && intval($time_old_raw) < time();
+            $Method_extend = $alreadyExpired ? "resetVolumeTime" : "addTimeConvertVolume";
+        }
         if ($Method_extend == "resetVolumeTime") {
             $reset = $this->ResetUserDataUsage($username, $panel['name_panel']);
             if ($reset['status'] == false) {
@@ -248,7 +255,10 @@ class ManagePanel
             $time_new = $time_new_add;
             $data_limit_last = $data_user['data_limit'] - $data_user['used_traffic'];
             $data_limit_last = $data_limit_last < 0 ? 0 : $data_limit_last;
-            $data_limit_new = $data_limit_new + $data_limit_last;
+            // an unlimited plan (0) must stay unlimited, so the leftover volume is only carried over for limited plans
+            if ($data_limit_new != 0) {
+                $data_limit_new = $data_limit_new + $data_limit_last;
+            }
         }
         $driver = PanelRegistry::driver($panel['type'], $this);
         if ($driver !== null && ($result = $driver->extendService(get_defined_vars())) !== BasePanelDriver::UNSUPPORTED) {
