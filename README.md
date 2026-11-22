@@ -29,7 +29,7 @@
   <a href="https://github.com/OneLegChicken/mirzabot/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/mahdiMGF2/mirzabot?style=flat-square" alt="License"/>
   </a>
-  <img src="https://img.shields.io/badge/PHP-8.4.27%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.4.27+"/>
+  <img src="https://img.shields.io/badge/PHP-8.5.4%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.5.4+ (or PHP 8.4.27+)"/>
 </p>
 
 </div>
@@ -145,7 +145,7 @@ The full manual is at **[mirzabot.com/docs](https://mirzabot.com/docs/)**: 61 pa
 |---|---|
 | **Server** | A clean Ubuntu 22.04 / 24.04 / 26.04 or Debian 12 / 13 |
 | **Domain** | A domain pointed to the server's IP |
-| **Stack** | PHP 8.5.12+ (or 8.4.27+), Apache, MySQL / MariaDB and SSL, installed by the script |
+| **Stack** | PHP 8.5.4+ (or 8.4.27+), Apache, MySQL / MariaDB and SSL, installed by the script |
 
 > 💡 Start from a fresh server with no web server, database or panel on it.
 

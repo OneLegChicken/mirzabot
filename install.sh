@@ -556,7 +556,7 @@ setup_php_repo() {
 export -f setup_php_repo
 
 export PHP_TARGET_VER="8.5"
-export PHP_MIN_VERSION="8.5.12"
+export PHP_MIN_VERSION="8.5.4"
 [ "$(php -r 'echo PHP_MAJOR_VERSION, ".", PHP_MINOR_VERSION;' 2>/dev/null)" = "8.4" ] && export PHP_TARGET_VER="8.4" PHP_MIN_VERSION="8.4.27"
 
 # 0 when apt has an installable candidate for this package.
@@ -578,8 +578,8 @@ php_candidate_ok() {
 export -f php_candidate_ok
 
 select_php_target() {
-    if PHP_TARGET_VER=8.5 PHP_MIN_VERSION=8.5.12 php_candidate_ok >/dev/null; then
-        export PHP_TARGET_VER=8.5 PHP_MIN_VERSION=8.5.12
+    if PHP_TARGET_VER=8.5 PHP_MIN_VERSION=8.5.4 php_candidate_ok >/dev/null; then
+        export PHP_TARGET_VER=8.5 PHP_MIN_VERSION=8.5.4
     elif PHP_TARGET_VER=8.4 PHP_MIN_VERSION=8.4.27 php_candidate_ok >/dev/null; then
         export PHP_TARGET_VER=8.4 PHP_MIN_VERSION=8.4.27
     fi
