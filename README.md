@@ -154,7 +154,7 @@ The full manual is at **[mirzabot.com/docs](https://mirzabot.com/docs/)**: 61 pa
 Run this as **root**:
 
 ```bash
-curl -o install.sh -L https://raw.githubusercontent.com/mahdiMGF2/mirzabot/main/install.sh && bash install.sh
+curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/main/install.sh && bash install.sh
 ```
 
 After the first install, open the same menu any time with `mirza`:
