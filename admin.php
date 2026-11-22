@@ -5394,7 +5394,7 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     sendmessage($from_id, $textbotlang['Admin']['addorder']['manualIntro'], $backadmin, 'HTML');
     step('getusernameconfigcr', $from_id);
 } elseif ($user['step'] == "getusernameconfigcr") {
-    if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
+    if (!preg_match('~^[a-z][a-z\d]{2,32}$~i', $text)) {
         sendmessage($from_id, $textbotlang['users']['invalidusername'], $backadmin, 'HTML');
         return;
     }

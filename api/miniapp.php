@@ -798,7 +798,7 @@ function mini_purchase(array $data, string $method): void
         ]);
         return;
     }
-    if (!empty($data['custom_username']) && !preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', (string) $data['custom_username'])) {
+    if (!empty($data['custom_username']) && !preg_match('~^[a-z][a-z\d]{2,32}$~i', (string) $data['custom_username'])) {
         http_response_code(400);
         echo json_encode(array(
             'status' => false,

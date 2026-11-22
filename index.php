@@ -3100,7 +3100,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     }
     if ($user['step'] == "createusertest") {
         $name_panel = $user['Processing_value_one'];
-        if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
+        if (!preg_match('~^[a-z][a-z\d]{2,32}$~i', $text)) {
             sendmessage($from_id, $textbotlang['users']['invalidusername'], $backuser, 'HTML');
             return;
         }
@@ -3935,7 +3935,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         return;
     }
     if (in_array(usernameMethodKey($marzban_list_get['MethodUsername']), ['customUsername', 'customUsernameRandom'], true)) {
-        if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
+        if (!preg_match('~^[a-z][a-z\d]{2,32}$~i', $text)) {
             sendmessage($from_id, $textbotlang['users']['invalidusername'], $backuser, 'HTML');
             return;
         }
@@ -4595,7 +4595,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
     if (in_array(usernameMethodKey($marzban_list_get['MethodUsername']), ['customUsername', 'customUsernameRandom'], true)) {
-        if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
+        if (!preg_match('~^[a-z][a-z\d]{2,32}$~i', $text)) {
             sendmessage($from_id, $textbotlang['users']['invalidusername'], $backuser, 'HTML');
             return;
         }
@@ -6303,7 +6303,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     sendmessage($from_id, $textbotlang['users']['selectusername'], $backuser, 'html');
     step('selectusernamecustom', $from_id);
 } elseif ($user['step'] == "selectusernamecustom") {
-    if (!preg_match('~(?!_)^[a-z][a-z\d_]{2,32}(?<!_)$~i', $text)) {
+    if (!preg_match('~^[a-z][a-z\d]{2,32}$~i', $text)) {
         sendmessage($from_id, $textbotlang['users']['invalidusername'], $backuser, 'HTML');
         return;
     }
