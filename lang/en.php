@@ -3484,6 +3484,14 @@ Your panel statistics👇:
 User group:%s
         
 ⭕️ To manage the panel, select one of the options below',
+                        'nodeXDetails' => '📊 <b>NodeX detailed statistics: %s</b>
+👥 Subscriptions: %s total | %s active | %s available | %s disabled | %s expired | %s limited | %s on hold
+📡 Current traffic: %s used of %s assigned
+🟢 Online now: %s | Online today: %s
+📈 Usage: %s last 24h | %s last 7d | %s last 30d
+⚠️ Attention: %s low on traffic | %s near expiry | %s expired today | %s limited today
+🔥 Top users by traffic (7d): %s
+🛰 Top nodes by traffic (7d): %s',
                         'panelSales' => '
 Your panel statistics👇:
 
@@ -4067,6 +4075,7 @@ We hope you had a good experience with the ease and speed of your service. If yo
                 'quickSetVolumePrice' => '🔋 Quick volume price setting',
                 'rebecca' => 'Rebecca',
                 'guard' => 'NodeX',
+                'nodexStats' => '📊 NodeX detailed statistics',
                 'reWebhookAgentBots' => '🔗 Re-webhook agent bots',
                 'setBotCommands' => '⛏ Bot commands',
                 'apiToken' => '🔑 API token',

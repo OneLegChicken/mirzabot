@@ -3484,6 +3484,14 @@ f,n.n2',
 用户组：%s
         
 ⭕️ 要管理面板，请选择下方的一个选项',
+                        'nodeXDetails' => '📊 <b>NodeX 详细统计：%s</b>
+👥 订阅：总计 %s | 活跃 %s | 可用 %s | 已禁用 %s | 已过期 %s | 流量用尽 %s | 暂停 %s
+📡 当前流量：已用 %s / 已分配 %s
+🟢 当前在线：%s | 今日在线：%s
+📈 流量使用：近24小时 %s | 近7天 %s | 近30天 %s
+⚠️ 需要关注：流量不足 %s | 即将到期 %s | 今日过期 %s | 今日流量用尽 %s
+🔥 近7天流量最多的用户：%s
+🛰 近7天流量最高的节点：%s',
                         'panelSales' => '
 您的面板统计👇：
 
@@ -4067,6 +4075,7 @@ f,n.n2',
                 'quickSetVolumePrice' => '🔋 快速设置流量价格',
                 'rebecca' => 'Rebecca',
                 'guard' => 'NodeX',
+                'nodexStats' => '📊 NodeX 详细统计',
                 'reWebhookAgentBots' => '🔗 重新设置代理机器人 webhook',
                 'setBotCommands' => '⛏ 机器人命令',
                 'apiToken' => '🔑 API 令牌',

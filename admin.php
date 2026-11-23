@@ -2500,6 +2500,63 @@ elseif ($datain == "systemsms") {
     sendmessage($from_id, $textbotlang['Admin']['SettingnowPayment']['saveApi'], $keyboardvariza, 'HTML');
     config_set('pay', "variza_webhook_secret", trim($text));
     step('home', $from_id);
+} elseif ($text == $textbotlang['keyboard']['nodexStats'] && $adminrulecheck['rule'] == "administrator") {
+    $nodeXPanel = select("marzban_panel", "*", "name_panel", $user['Processing_value'], "select");
+    if (!$nodeXPanel || !in_array($nodeXPanel['type'] ?? '', ["nodex", "guard", "solidlayer"], true)) {
+        sendmessage($from_id, $textbotlang['Admin']['managepanel']['errorStatusPanel'], $backadmin, 'HTML');
+    } else {
+        $nodeXStats = [];
+        foreach ([
+            'overview' => '/stats/overview',
+            'activity' => '/stats/activity',
+            'usage24' => '/stats/usage?range=24h',
+            'usage7' => '/stats/usage?range=7d',
+            'usage30' => '/stats/usage?range=30d',
+            'watchlist' => '/stats/watchlist',
+            'users' => '/stats/traffic-breakdown?range=7d&dimension=users',
+            'nodes' => '/stats/traffic-breakdown?range=7d&dimension=nodes',
+        ] as $key => $path) {
+            $response = request_nodex($nodeXPanel['name_panel'], 'GET', $path);
+            $decoded = json_decode($response['body'] ?? '', true);
+            $nodeXStats[$key] = empty($response['error']) && (int) ($response['status'] ?? 500) < 400 && is_array($decoded) ? $decoded : [];
+        }
+        $overview = $nodeXStats['overview'];
+        $activity = $nodeXStats['activity'];
+        $watchlist = $nodeXStats['watchlist'];
+        $metric = static function (array $data, string $key): string {
+            return isset($data[$key]) && is_numeric($data[$key]) ? number_format((float) $data[$key]) : '—';
+        };
+        $usage = static function (array $data): string {
+            return isset($data['total']) && is_numeric($data['total']) ? formatBytes((float) $data['total']) : '—';
+        };
+        $top = static function (array $data): string {
+            $items = $data['series'] ?? $data['items'] ?? $data['data'] ?? [];
+            if (!is_array($items) || !$items) return '—';
+            usort($items, static fn($a, $b) => (float) ($b['usage'] ?? $b['total'] ?? 0) <=> (float) ($a['usage'] ?? $a['total'] ?? 0));
+            $labels = [];
+            foreach (array_slice($items, 0, 3) as $item) {
+                if (!is_array($item)) continue;
+                $name = htmlspecialchars((string) ($item['name'] ?? $item['username'] ?? $item['id'] ?? '—'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $amount = $item['usage'] ?? $item['total'] ?? null;
+                $labels[] = $name . (is_numeric($amount) ? ' (' . formatBytes((float) $amount) . ')' : '');
+            }
+            return $labels ? implode(', ', $labels) : '—';
+        };
+        $details = sprintf(
+            $textbotlang['Admin']['stats']['nodeXDetails'],
+            htmlspecialchars((string) $nodeXPanel['name_panel'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            $metric($overview, 'total'), $metric($overview, 'active'), $metric($overview, 'available'),
+            $metric($overview, 'disabled'), $metric($overview, 'expired'), $metric($overview, 'limited'), $metric($overview, 'on_hold'),
+            isset($overview['used_bytes']) && is_numeric($overview['used_bytes']) ? formatBytes((float) $overview['used_bytes']) : '—',
+            isset($overview['limit_bytes']) && is_numeric($overview['limit_bytes']) ? formatBytes((float) $overview['limit_bytes']) : '—',
+            $metric($activity, 'online_now'), $metric($activity, 'today'),
+            $usage($nodeXStats['usage24']), $usage($nodeXStats['usage7']), $usage($nodeXStats['usage30']),
+            $metric($watchlist, 'low_usage'), $metric($watchlist, 'low_time'), $metric($watchlist, 'expired_today'), $metric($watchlist, 'limited_today'),
+            $top($nodeXStats['users']), $top($nodeXStats['nodes'])
+        );
+        sendmessage($from_id, $details, $panelOptions[$nodeXPanel['type']], 'HTML');
+    }
+    step('home', $from_id);
 } elseif ($text == $textbotlang['Admin']['btnKeyboard']['managementPanel'] && $adminrulecheck['rule'] == "administrator") {
     sendmessage($from_id, $textbotlang['Admin']['managepanel']['getLoc'], $json_list_marzban_panel, 'HTML');
     step('GetLocationEdit', $from_id);
