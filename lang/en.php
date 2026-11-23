@@ -3490,6 +3490,7 @@ Your panel statistics👇:
 🖥 Panel connection status: ✅ Panel is connected
 🛍 Total sales count on this panel: %s
 🛍 Total sales on this panel: %s Toman
+📊 Total traffic sold (created + renewed): %s GB
 User group:%s
 
 ⭕️ To manage the panel, select one of the options below',

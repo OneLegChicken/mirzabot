@@ -2689,7 +2689,27 @@ elseif ($datain == "systemsms") {
             $ListSellSum->bindValue(2, $textbotlang['common']['labels']['testServiceName'], PDO::PARAM_STR);
             $ListSellSum->execute();
             $ListSellSUM = number_format($ListSellSum->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'] ?? 0);
-            $text_marzban = sprintf($textbotlang['Admin']['stats']['panelSales'], $ListSell, $ListSellSUM, $marzban_list_get['agent']);
+            $trafficSoldGb = 0.0;
+            $trafficSales = $pdo->prepare("SELECT Volume FROM invoice WHERE Status IN ('active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold') AND Service_location = ? AND name_product != ?");
+            $trafficSales->execute([$marzban_list_get['name_panel'], $textbotlang['common']['labels']['testServiceName']]);
+            while ($trafficSale = $trafficSales->fetch(PDO::FETCH_ASSOC)) {
+                if (is_numeric($trafficSale['Volume'] ?? null)) {
+                    $trafficSoldGb += max(0, (float) $trafficSale['Volume']);
+                }
+            }
+            $trafficRenewals = $pdo->prepare("SELECT so.type, so.value FROM service_other so WHERE so.type IN ('extend_user', 'extra_user') AND COALESCE(so.status, '') NOT IN ('unpaid', 'failed') AND EXISTS (SELECT 1 FROM invoice i WHERE i.username = so.username AND i.id_user = so.id_user AND i.Status IN ('active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold') AND i.Service_location = ? AND i.name_product != ?)");
+            $trafficRenewals->execute([$marzban_list_get['name_panel'], $textbotlang['common']['labels']['testServiceName']]);
+            while ($trafficRenewal = $trafficRenewals->fetch(PDO::FETCH_ASSOC)) {
+                $renewalData = json_decode((string) $trafficRenewal['value'], true);
+                $volumeGb = $trafficRenewal['type'] === 'extend_user'
+                    ? ($renewalData['volumebuy'] ?? 0)
+                    : ($renewalData['volume_value'] ?? 0);
+                if (is_numeric($volumeGb)) {
+                    $trafficSoldGb += max(0, (float) $volumeGb);
+                }
+            }
+            $trafficSoldGb = number_format($trafficSoldGb, 2);
+            $text_marzban = sprintf($textbotlang['Admin']['stats']['panelSales'], $ListSell, $ListSellSUM, $trafficSoldGb, $marzban_list_get['agent']);
             sendmessage($from_id, $text_marzban, $panelOptions[$marzban_list_get['type']], 'HTML');
         } elseif (!empty($Check_connection['status']) && $Check_connection['status'] == 401) {
             $text_marzban = $textbotlang['Admin']['managepanel']['invalidToken'];
