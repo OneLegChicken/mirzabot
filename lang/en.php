@@ -3761,6 +3761,7 @@ After joining, click the check membership button',
 Your test service with username {username} has ended
 We hope you had a good experience with the ease and speed of your service. If you were satisfied with your test service, you can get your own dedicated service and enjoy free internet with the highest quality😉🔥
 🛍 To get a quality service, you can use the button below',
+                'testExpiredCleanupNotice' => '⏳ After 72 hours, the test record will be removed from the bot database only. The subscription will remain in the NodeX panel.',
                 'userTest' => '🔑 Test account',
                 'wgDashboard' => '✅ Service was created successfully
 
