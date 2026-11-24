@@ -286,11 +286,11 @@ if (getPaySettingValue('digipaycredit_status', 'off') === 'on' && trim((string) 
 if ($PaySettingcard == "oncard" && intval($users['cardpayment']) == 1) {
     if ($PaySettingpv == "oncardpv") {
         $step_payment['inline_keyboard'][] = [
-            ['text' => $textbotlang['textbot']['cartToCart'], 'url' => "https://t.me/$usernamecart"],
+            ['text' => $textbotlang['textbot']['cartToCart'], 'url' => "https://t.me/$usernamecart", 'style' => 'success'],
         ];
     } else {
         $step_payment['inline_keyboard'][] = [
-            ['text' => $textbotlang['textbot']['cartToCart'], 'callback_data' => "cart_to_offline"],
+            ['text' => $textbotlang['textbot']['cartToCart'], 'callback_data' => "cart_to_offline", 'style' => 'success'],
         ];
     }
 }

@@ -47,9 +47,6 @@ while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
             ]],
         ]);
         $expiredMessage = str_replace('{username}', $username, $textbotlang['textbot']['testExpired']);
-        if ($isNodeX) {
-            $expiredMessage .= "\n\n" . $textbotlang['textbot']['testExpiredCleanupNotice'];
-        }
         sendmessage($result['id_user'], $expiredMessage, $response, 'HTML');
     }
 }
