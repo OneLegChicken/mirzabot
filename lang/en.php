@@ -1102,6 +1102,11 @@ Top up your wallet to buy or renew services.',
 📶 Last connection time  : %s
 🔄 Last subscription link update time  : %s
 #️⃣ Connected client :<code>%s</code>',
+                        'nodeXUsage' => '
+📊 This service usage: last 24h %s | 7 days %s | 30 days %s
+📈 Average daily usage over 7 days: %s',
+                        'nodeXEstimatedDays' => '
+⏳ Estimated time until traffic runs out at this rate: %s',
                         'infoBasic' => 'Service status : <b>%s</b>
 Service username : %s
 📎 Service tracking code : %s

@@ -1186,6 +1186,26 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         }
         $textinfo = sprintf($textbotlang['users']['status']['infoFull'], $status_var, $DataUserOut['username'], $userpassword, $nameconfig, $nameloc['Service_location'], $nameloc['name_product'], $LastTraffic, $usedTrafficGb, $RemainingVolume, $Percent, $expirationDate, $day, $textconnect);
     }
+    if (in_array($marzban['type'] ?? '', ["nodex", "guard", "solidlayer"], true)) {
+        $hourlyUsage = nodex_subscription_usage_points($nameloc['username'], $nameloc['Service_location'], 'hours=168');
+        $monthlyUsage = nodex_subscription_usage_points($nameloc['username'], $nameloc['Service_location'], 'days=30');
+        $usage24h = $hourlyUsage !== null ? array_sum(array_slice($hourlyUsage, -24)) : null;
+        $usage7d = $hourlyUsage !== null ? array_sum($hourlyUsage) : null;
+        $usage30d = $monthlyUsage !== null ? array_sum($monthlyUsage) : null;
+        $formatUsage = static fn($usage) => $usage === null ? '—' : formatBytes($usage);
+        $textinfo .= sprintf(
+            $textbotlang['users']['status']['nodeXUsage'],
+            $formatUsage($usage24h),
+            $formatUsage($usage7d),
+            $formatUsage($usage30d),
+            $usage7d === null ? '—' : formatBytes($usage7d / 7)
+        );
+        if ($usage7d !== null && $usage7d > 0 && (float) $DataUserOut['data_limit'] > 0) {
+            $remainingBytes = max(0, (float) $DataUserOut['data_limit'] - (float) $DataUserOut['used_traffic']);
+            $daysRemaining = number_format($remainingBytes / ($usage7d / 7), 1) . ' ' . $textbotlang['Admin']['unit']['days'];
+            $textinfo .= sprintf($textbotlang['users']['status']['nodeXEstimatedDays'], $daysRemaining);
+        }
+    }
     if ($user['step'] == "getuseragnetservice") {
         sendmessage($from_id, $textinfo, $keyboardsetting, 'html');
     } elseif ($datain == "productcheckdata") {
