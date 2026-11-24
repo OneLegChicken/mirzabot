@@ -188,14 +188,28 @@ if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{24})$/', $datain, $dpAct
     if ($dpAction[1] === 'accept') {
         if ($payment['payment_Status'] !== 'Unpaid') return;
         $qr = trim((string) config_get('pay', 'digipaycredit_qr_file_id', '0'));
-        if ($qr === '' || $qr === '0') return;
+        if ($qr === '' || $qr === '0') {
+            error_log('DigiPay QR display failed: no Telegram photo file_id is configured.');
+            sendmessage($from_id, 'تصویر QR برای این درگاه تنظیم نشده است. لطفاً مدیر ربات را مطلع کنید.', null, 'HTML');
+            return;
+        }
         $fee = (int) ($payment['fee_amount'] ?? 0); $gross = (int) ($payment['gross_amount'] ?? $payment['price']);
         $caption = htmlspecialchars(trim((string) config_get('pay', 'digipaycredit_help', '')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $caption .= ($caption !== '' ? "\n\n" : '') . 'مبلغ قابل پرداخت: ' . number_format($gross) . ' تومان';
         if ($fee > 0) $caption .= "\n(مبلغ سفارش " . number_format($payment['price']) . ' + کارمزد ' . number_format($fee) . ' تومان)';
         $caption .= "\n\nلطفاً پس از پرداخت، دکمهٔ سبز «پرداخت کردم» را بزنید؛ در غیر این صورت سفارش شما در سیستم ثبت نمی‌شود.";
+        $photoResult = telegram('sendphoto', ['chat_id' => $from_id, 'photo' => $qr, 'caption' => $caption, 'parse_mode' => 'HTML']);
+        if (empty($photoResult['ok'])) {
+            error_log('DigiPay QR send failed: ' . ($photoResult['description'] ?? 'unknown Telegram API error'));
+            sendmessage($from_id, 'ارسال تصویر QR ناموفق بود. لطفاً مدیر ربات را مطلع کنید.', null, 'HTML');
+            return;
+        }
         $kb = json_encode(['inline_keyboard' => [[['text' => 'پرداخت کردم', 'callback_data' => 'digipaypaid_' . $payment['id_order'], 'style' => 'success'], ['text' => 'انصراف از پرداخت', 'callback_data' => 'digipaycancel_' . $payment['id_order'], 'style' => 'danger']]]], JSON_UNESCAPED_UNICODE);
-        telegram('sendPhoto', ['chat_id' => $from_id, 'photo' => $qr, 'caption' => $caption, 'reply_markup' => $kb, 'parse_mode' => 'HTML']);
+        $buttonResult = telegram('sendmessage', ['chat_id' => $from_id, 'text' => 'پس از پرداخت، دکمهٔ سبز را بزنید؛ برای لغو از دکمهٔ قرمز استفاده کنید.', 'reply_markup' => $kb, 'parse_mode' => 'HTML']);
+        if (empty($buttonResult['ok'])) {
+            error_log('DigiPay QR buttons send failed: ' . ($buttonResult['description'] ?? 'unknown Telegram API error'));
+            sendmessage($from_id, 'QR ارسال شد، اما ارسال دکمه‌ها ناموفق بود. لطفاً مدیر ربات را مطلع کنید.', null, 'HTML');
+        }
         return;
     }
     if ($payment['payment_Status'] !== 'Unpaid') return;
