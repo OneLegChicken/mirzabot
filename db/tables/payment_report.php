@@ -14,7 +14,9 @@ return [
         payment_Status varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
         bottype varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
         message_id INT NULL,
-        id_invoice varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL
+        id_invoice varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+        fee_amount BIGINT NOT NULL DEFAULT 0,
+        gross_amount BIGINT NOT NULL DEFAULT 0
         SQL,
     'ensureUtf8mb4' => true,
     'columns' => [
@@ -23,5 +25,7 @@ return [
         ['bottype', null, 'VARCHAR(300)'],
         ['message_id', null, 'INT'],
         ['id_invoice', 'none', 'VARCHAR(400)'],
+        ['fee_amount', '0', 'BIGINT NOT NULL DEFAULT 0'],
+        ['gross_amount', '0', 'BIGINT NOT NULL DEFAULT 0'],
     ],
 ];

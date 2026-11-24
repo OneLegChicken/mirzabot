@@ -166,6 +166,51 @@ if ($from_id != 0) {
     }
 }
 $user = select("user", "*", "id", $from_id, "select");
+if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{24})$/', $datain, $dpAction)) {
+    $payment = select('payment_report', '*', 'id_order', $dpAction[2], 'select');
+    if (!$payment || (string) $payment['id_user'] !== (string) $from_id || $payment['Payment_Method'] !== 'DigiPay credit') return;
+    if ($dpAction[1] === 'cancel') {
+        if ($payment['payment_Status'] !== 'Unpaid') return;
+        update('payment_report', 'payment_Status', 'expire', 'id_order', $payment['id_order']);
+        $ctx = json_decode((string) $payment['id_invoice'], true) ?: [];
+        $pdo->prepare("UPDATE invoice SET id_payment = NULL WHERE id_payment = ?")->execute([$payment['id_order']]);
+        $pdo->prepare("UPDATE service_other SET id_payment = NULL WHERE id_payment = ?")->execute([$payment['id_order']]);
+        if (!empty($ctx['order_id'])) update('user', 'Processing_value_one', $ctx['order_id'], 'id', $from_id);
+        if (!empty($ctx['step'])) step($ctx['step'], $from_id);
+        if (!empty($update['callback_query']['message']['photo'])) {
+            telegram('editMessageCaption', ['chat_id' => $from_id, 'message_id' => $message_id, 'caption' => 'پرداخت لغو شد. می‌توانید روش دیگری انتخاب کنید.', 'reply_markup' => json_encode(['inline_keyboard' => []], JSON_UNESCAPED_UNICODE)]);
+        } else {
+            telegram('editMessageText', ['chat_id' => $from_id, 'message_id' => $message_id, 'text' => 'پرداخت لغو شد. می‌توانید روش دیگری انتخاب کنید.', 'reply_markup' => json_encode(['inline_keyboard' => []], JSON_UNESCAPED_UNICODE)]);
+        }
+        return;
+    }
+    if ($dpAction[1] === 'accept') {
+        if ($payment['payment_Status'] !== 'Unpaid') return;
+        $qr = trim((string) config_get('pay', 'digipaycredit_qr_file_id', '0'));
+        if ($qr === '' || $qr === '0') return;
+        $fee = (int) ($payment['fee_amount'] ?? 0); $gross = (int) ($payment['gross_amount'] ?? $payment['price']);
+        $caption = htmlspecialchars(trim((string) config_get('pay', 'digipaycredit_help', '')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $caption .= ($caption !== '' ? "\n\n" : '') . 'مبلغ قابل پرداخت: ' . number_format($gross) . ' تومان';
+        if ($fee > 0) $caption .= "\n(مبلغ سفارش " . number_format($payment['price']) . ' + کارمزد ' . number_format($fee) . ' تومان)';
+        $caption .= "\n\nلطفاً پس از پرداخت، دکمهٔ سبز «پرداخت کردم» را بزنید؛ در غیر این صورت سفارش شما در سیستم ثبت نمی‌شود.";
+        $kb = json_encode(['inline_keyboard' => [[['text' => 'پرداخت کردم', 'callback_data' => 'digipaypaid_' . $payment['id_order'], 'style' => 'success'], ['text' => 'انصراف از پرداخت', 'callback_data' => 'digipaycancel_' . $payment['id_order'], 'style' => 'danger']]]], JSON_UNESCAPED_UNICODE);
+        telegram('sendPhoto', ['chat_id' => $from_id, 'photo' => $qr, 'caption' => $caption, 'reply_markup' => $kb, 'parse_mode' => 'HTML']);
+        return;
+    }
+    if ($payment['payment_Status'] !== 'Unpaid') return;
+    $claim = $pdo->prepare("UPDATE payment_report SET payment_Status='waiting', at_updated=? WHERE id_order=? AND payment_Status='Unpaid'");
+    $claim->execute([date('Y/m/d H:i:s'), $payment['id_order']]);
+    if ($claim->rowCount() < 1) return;
+    telegram('editMessageReplyMarkup', ['chat_id' => $from_id, 'message_id' => $message_id, 'reply_markup' => json_encode(['inline_keyboard' => []])]);
+    sendmessage($from_id, 'از خرید شما سپاسگزاریم. درخواست پرداخت ثبت شد و سفارش پس از بررسی مدیر ارسال می‌شود.', $keyboard, 'HTML');
+    updatePaymentMessageId($message_id, $payment['id_order']);
+    $adminKb = json_encode(['inline_keyboard' => [[['text' => 'تأیید پرداخت', 'callback_data' => 'Confirm_pay_' . $payment['id_order']], ['text' => 'رد پرداخت', 'callback_data' => 'reject_pay_' . $payment['id_order']]]]], JSON_UNESCAPED_UNICODE);
+    foreach ($admin_ids as $adminId) {
+        $adminRow = select('admin', '*', 'id_admin', $adminId, 'select');
+        if (($adminRow['rule'] ?? '') === 'administrator') sendmessage($adminId, 'درخواست تأیید پرداخت اعتباری دیجی‌پی\nمبلغ: ' . number_format($payment['gross_amount']) . ' تومان\nسفارش: ' . $payment['id_order'] . '\nکاربر: ' . $from_id, $adminKb, 'HTML');
+    }
+    return;
+}
 if ($user == false) {
     $user = array();
     $user = array(
@@ -4893,7 +4938,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     update("user", "Processing_value", $balancelast, "id", $from_id);
     sendmessage($from_id, $textbotlang['users']['Balance']['selectPayment'], $step_payment, 'HTML');
     step('get_step_payment', $from_id);
-} elseif (in_array($user['step'], ["get_step_payment", "get_step_payment_buy", "get_step_payment_service"]) && in_array($datain, ["cart_to_offline", "aqayepardakht", "zarinpal", "variza", "plisio", "nowpayment", "iranpay1", "iranpay2", "iranpay4", "iranpay3", "digitaltron", "startelegrams"])) {
+} elseif (in_array($user['step'], ["get_step_payment", "get_step_payment_buy", "get_step_payment_service"]) && in_array($datain, ["cart_to_offline", "digipaycredit", "aqayepardakht", "zarinpal", "variza", "plisio", "nowpayment", "iranpay1", "iranpay2", "iranpay4", "iranpay3", "digitaltron", "startelegrams"])) {
     if ($user['step'] == "get_step_payment_buy") {
         $pending_order = select("invoice", "*", "id_invoice", $user['Processing_value_one'], "select");
         if ($pending_order == false || $pending_order['Status'] != "unpaid") {
@@ -4911,7 +4956,35 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         }
         $user['Processing_value'] = $pending_order['payable_amount'];
     }
-    if ($datain == "cart_to_offline") {
+    if ($datain == "digipaycredit") {
+        $qrFileId = trim((string) config_get('pay', 'digipaycredit_qr_file_id', '0'));
+        if (getPaySettingValue('digipaycredit_status', 'off') !== 'on' || $qrFileId === '' || $qrFileId === '0') {
+            sendmessage($from_id, 'درگاه پرداخت اعتباری در حال حاضر در دسترس نیست.', $step_payment, 'HTML');
+            return;
+        }
+        $base = (int) $user['Processing_value'];
+        $feePercent = max(0, min(100, (float) config_get('pay', 'digipaycredit_fee_percent', '0')));
+        $fee = (int) ceil($base * $feePercent / 100);
+        $gross = $base + $fee;
+        $minimum = (int) config_get('pay', 'minbalancedigipaycredit', '20000');
+        $maximum = (int) config_get('pay', 'maxbalancedigipaycredit', '1000000');
+        if ($gross < $minimum || $gross > $maximum) {
+            sendmessage($from_id, 'مبلغ نهایی پرداخت باید بین ' . number_format($minimum) . ' تا ' . number_format($maximum) . ' تومان باشد.', null, 'HTML');
+            return;
+        }
+        $orderId = bin2hex(random_bytes(12));
+        $date = date('Y/m/d H:i:s');
+        $stmt = $pdo->prepare("INSERT INTO payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,fee_amount,gross_amount) VALUES (?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([$from_id, $orderId, $date, $base, 'Unpaid', 'DigiPay credit', json_encode(['step' => $user['step'], 'order_id' => $user['Processing_value_one']], JSON_UNESCAPED_UNICODE), $fee, $gross]);
+        linkPaymentToOrder($orderId, $user);
+        $terms = trim((string) config_get('pay', 'digipaycredit_help', ''));
+        $amountText = $fee > 0
+            ? "مبلغ سفارش: <b>" . number_format($base) . " تومان</b>\nکارمزد {$feePercent}%: <b>" . number_format($fee) . " تومان</b>\nمبلغ قابل پرداخت: <b>" . number_format($gross) . " تومان</b>"
+            : "مبلغ قابل پرداخت: <b>" . number_format($gross) . " تومان</b>";
+        $termsText = ($terms !== '' ? htmlspecialchars($terms, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n\n" : '') . $amountText . "\n\nبا پذیرش شرایط، QR پرداخت نمایش داده می‌شود.";
+        $termsKb = json_encode(['inline_keyboard' => [[['text' => 'قبول شرایط و نمایش QR', 'callback_data' => 'digipayaccept_' . $orderId, 'style' => 'primary']], [['text' => 'انصراف', 'callback_data' => 'digipaycancel_' . $orderId, 'style' => 'danger']]]], JSON_UNESCAPED_UNICODE);
+        telegram('sendmessage', ['chat_id' => $from_id, 'text' => $termsText, 'reply_markup' => $termsKb, 'parse_mode' => 'HTML']);
+    } elseif ($datain == "cart_to_offline") {
         $mainbalance = config_get('pay', "minbalancecart");
         $maxbalance = config_get('pay', "maxbalancecart");
         if ($user['Processing_value'] < $mainbalance || $user['Processing_value'] > $maxbalance) {

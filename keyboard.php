@@ -278,6 +278,11 @@ $payment_status_nowpayment = getPaySettingValue("statusnowpayment");
 $step_payment = [
     'inline_keyboard' => []
 ];
+if (getPaySettingValue('digipaycredit_status', 'off') === 'on' && trim((string) getPaySettingValue('digipaycredit_qr_file_id', '0')) !== '' && getPaySettingValue('digipaycredit_qr_file_id', '0') !== '0') {
+    $step_payment['inline_keyboard'][] = [
+        ['text' => 'پرداخت اعتباری با دیجی‌پی', 'callback_data' => 'digipaycredit', 'style' => 'primary']
+    ];
+}
 if ($PaySettingcard == "oncard" && intval($users['cardpayment']) == 1) {
     if ($PaySettingpv == "oncardpv") {
         $step_payment['inline_keyboard'][] = [
@@ -1529,6 +1534,7 @@ $nowpayment_setting_keyboard = json_encode([
 ]);
 $paymentGateways = [
     'card' => ['label' => $textbotlang['keyboard']['cartToCartGateway'], 'setting' => 'Cartstatus', 'on' => 'oncard', 'off' => 'offcard', 'keyboard' => $CartManage],
+    'digipaycredit' => ['label' => 'پرداخت اعتباری دیجی‌پی', 'setting' => 'digipaycredit_status', 'on' => 'on', 'off' => 'off', 'keyboard' => json_encode(['inline_keyboard' => [[['text' => 'حداقل مبلغ', 'callback_data' => 'digipaycfg-min']], [['text' => 'حداکثر مبلغ', 'callback_data' => 'digipaycfg-max']], [['text' => 'کارمزد درصدی', 'callback_data' => 'digipaycfg-fee']], [['text' => 'متن راهنما', 'callback_data' => 'digipaycfg-help']], [['text' => 'بارگذاری / جایگزینی QR', 'callback_data' => 'digipaycfg-qr']], [['text' => 'حذف QR ذخیره‌شده', 'callback_data' => 'digipaycfg-removeqr']], [['text' => $textbotlang['keyboard']['backToGateways'], 'callback_data' => 'paygwlist']]]])],
     'plisio' => ['label' => 'Plisio', 'setting' => 'nowpaymentstatus', 'on' => 'onnowpayment', 'off' => 'offnowpayment', 'keyboard' => $NowPaymentsManage],
     'nowpayment' => ['label' => 'NOWPayments', 'setting' => 'statusnowpayment', 'on' => '1', 'off' => '0', 'keyboard' => $nowpayment_setting_keyboard],
     'iranpay1' => ['label' => $textbotlang['keyboard']['iranPay1Label'], 'setting' => 'statusSwapWallet', 'on' => 'onSwapinoBot', 'off' => 'offSwapinoBot', 'keyboard' => $Swapinokey],

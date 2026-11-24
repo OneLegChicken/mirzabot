@@ -107,6 +107,24 @@ if ($adminrulecheck['rule'] != "administrator") {
         return;
     }
 }
+if (str_starts_with($datain, 'digipaycfg-') && ($adminrulecheck['rule'] ?? '') === 'administrator') {
+    $action = substr($datain, strlen('digipaycfg-'));
+    $steps = ['min' => ['getMinDigipayCredit', 'حداقل مبلغ قابل قبول را به تومان بفرستید.'], 'max' => ['getMaxDigipayCredit', 'حداکثر مبلغ قابل قبول را به تومان بفرستید.'], 'fee' => ['getFeeDigipayCredit', 'درصد کارمزد را از ۰ تا ۱۰۰ بفرستید؛ صفر یعنی بدون کارمزد.'], 'help' => ['getHelpDigipayCredit', 'متن راهنمای پرداخت را بفرستید.'], 'qr' => ['getQrDigipayCredit', 'تصویر QR دیجی‌پی را به صورت عکس بفرستید. تصویر روی سایت ذخیره نمی‌شود؛ فقط شناسه فایل تلگرام ثبت خواهد شد.']];
+    if (isset($steps[$action])) {
+        step($steps[$action][0], $from_id);
+        sendmessage($from_id, $steps[$action][1], $backadmin, 'HTML');
+        return;
+    }
+    if ($action === 'removeqr') {
+        config_set('pay', 'digipaycredit_qr_file_id', '0');
+        config_set('pay', 'digipaycredit_status', 'off');
+        $audit = json_decode((string) config_get('pay', 'digipaycredit_qr_audit', '[]'), true) ?: [];
+        array_unshift($audit, ['action' => 'removed', 'admin_id' => (string) $from_id, 'at' => date('Y-m-d H:i:s')]);
+        config_set('pay', 'digipaycredit_qr_audit', array_slice($audit, 0, 20));
+        sendmessage($from_id, 'QR حذف شد و درگاه نیز غیرفعال شد.', paymentGatewaysKeyboard(), 'HTML');
+        return;
+    }
+}
 $isGatewayOptionClick = preg_match('/^paygwopt-(\w+)$/', $datain, $gatewayOption);
 if ($isGatewayOptionClick) {
     $text = $textbotlang['keyboard'][$gatewayOption[1]] ?? '';
@@ -1743,7 +1761,7 @@ elseif ($datain == "systemsms") {
     DirectPayment($order_id);
     $pricecashback = config_get('pay', "chashbackcart");
     $Balance_id = select("user", "*", "id", $Payment_report['id_user'], "select");
-    if ($pricecashback != "0") {
+    if ($pricecashback != "0" && $Payment_report['Payment_Method'] === 'cart to cart') {
         $result = ($Payment_report['price'] * $pricecashback) / 100;
         addBalance($Balance_id['id'], $result);
         $pricecashback = number_format($pricecashback);
@@ -5832,6 +5850,27 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     }
     sendmessage($from_id, $textbotlang['Admin']['price']['amountSaved'], $shopkeyboard, 'HTML');
     step('home', $from_id);
+} elseif ($user['step'] == 'getMinDigipayCredit' || $user['step'] == 'getMaxDigipayCredit') {
+    if (!ctype_digit($text) || (int) $text < 1) { sendmessage($from_id, 'لطفاً مبلغ صحیح و بزرگ‌تر از صفر وارد کنید.', $backadmin, 'HTML'); return; }
+    $isMin = $user['step'] === 'getMinDigipayCredit';
+    $other = (int) config_get('pay', $isMin ? 'maxbalancedigipaycredit' : 'minbalancedigipaycredit', $isMin ? '1000000' : '20000');
+    if (($isMin && (int) $text > $other) || (!$isMin && (int) $text < $other)) { sendmessage($from_id, 'مبلغ با بازه فعلی سازگار نیست؛ ابتدا مقدار دیگر را اصلاح کنید.', $backadmin, 'HTML'); return; }
+    config_set('pay', $isMin ? 'minbalancedigipaycredit' : 'maxbalancedigipaycredit', (string) (int) $text);
+    step('home', $from_id); sendmessage($from_id, 'مبلغ ذخیره شد.', paymentGatewaysKeyboard(), 'HTML');
+} elseif ($user['step'] == 'getFeeDigipayCredit') {
+    if (!preg_match('/^\d{1,3}(\.\d{1,2})?$/', $text) || (float) $text > 100) { sendmessage($from_id, 'درصدی بین ۰ تا ۱۰۰ وارد کنید.', $backadmin, 'HTML'); return; }
+    config_set('pay', 'digipaycredit_fee_percent', (string) (float) $text); step('home', $from_id); sendmessage($from_id, 'کارمزد ذخیره شد.', paymentGatewaysKeyboard(), 'HTML');
+} elseif ($user['step'] == 'getHelpDigipayCredit') {
+    config_set('pay', 'digipaycredit_help', $text); step('home', $from_id); sendmessage($from_id, 'متن راهنما ذخیره شد.', paymentGatewaysKeyboard(), 'HTML');
+} elseif ($user['step'] == 'getQrDigipayCredit') {
+    if (!$photo || empty($photoid)) { sendmessage($from_id, 'لطفاً تصویر QR را به صورت عکس بفرستید.', $backadmin, 'HTML'); return; }
+    config_set('pay', 'digipaycredit_qr_file_id', $photoid);
+    $audit = json_decode((string) config_get('pay', 'digipaycredit_qr_audit', '[]'), true) ?: [];
+    array_unshift($audit, ['action' => 'uploaded', 'admin_id' => (string) $from_id, 'at' => date('Y-m-d H:i:s')]);
+    config_set('pay', 'digipaycredit_qr_audit', array_slice($audit, 0, 20));
+    step('home', $from_id);
+    sendmessage($from_id, 'QR ثبت شد. فقط مدیر اصلی امکان جایگزینی آن را دارد.', paymentGatewaysKeyboard(), 'HTML');
+    foreach ($admin_ids as $ownerId) { $ownerRow = select('admin', '*', 'id_admin', $ownerId, 'select'); if (($ownerRow['rule'] ?? '') === 'administrator' && (string) $ownerId !== (string) $from_id) sendmessage($ownerId, 'QR درگاه دیجی‌پی توسط مدیر اصلی ' . $from_id . ' تغییر کرد.', null, 'HTML'); }
 } elseif ($datain == "paygwlist" && $adminrulecheck['rule'] == "administrator") {
     Editmessagetext($from_id, $message_id, $textbotlang['Admin']['gateway']['intro'], paymentGatewaysKeyboard());
 } elseif (preg_match('/^paygw(toggle)?-(\w+)$/', $datain, $gatewayMatch) && isset($paymentGateways[$gatewayMatch[2]]) && $adminrulecheck['rule'] == "administrator") {
@@ -5840,6 +5879,10 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     $gatewayIsOn = getPaySettingValue($gateway['setting'], $gateway['off']) == $gateway['on'];
     if ($isToggle) {
         $gatewayIsOn = !$gatewayIsOn;
+        if ($gatewayKey === 'digipaycredit' && $gatewayIsOn && (string) config_get('pay', 'digipaycredit_qr_file_id', '0') === '0') {
+            telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => 'ابتدا تصویر QR را بارگذاری کنید.', 'show_alert' => true]);
+            return;
+        }
         config_set('pay', $gateway['setting'], $gatewayIsOn ? $gateway['on'] : $gateway['off']);
     }
     $gatewayStatusText = $textbotlang['Admin']['Status'][$gatewayIsOn ? 'statuson' : 'statusoff'];
@@ -7498,7 +7541,7 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
     [$wheelText, $wheelKeyboard] = wheelSettingsMenu();
     editFlowMessage($textbotlang['Admin']['price']['rewardSaved'] . "\n\n" . $wheelText, $wheelKeyboard);
 } elseif ($text == $textbotlang['keyboard']['pendingReceipts']) {
-    $sql = "SELECT * FROM payment_report WHERE Payment_Method = 'cart to cart' AND payment_Status = 'waiting'";
+    $sql = "SELECT * FROM payment_report WHERE Payment_Method IN ('cart to cart', 'DigiPay credit') AND payment_Status = 'waiting'";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
     $list_payment = $stmt->fetchAll();
@@ -7529,7 +7572,7 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
 } elseif ($datain == "removeresid") {
     deletemessage($from_id, $message_id);
     sendmessage($from_id, $textbotlang['Admin']['Payment']['allReceiptsDeleted'], $list_payment, 'HTML');
-    $sql = "UPDATE payment_report SET payment_Status = 'reject',dec_not_confirmed = 'remove_all' WHERE Payment_Method = 'cart to cart' AND payment_Status = 'waiting'";
+    $sql = "UPDATE payment_report SET payment_Status = 'reject',dec_not_confirmed = 'remove_all' WHERE Payment_Method IN ('cart to cart', 'DigiPay credit') AND payment_Status = 'waiting'";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
 } elseif (preg_match('/showinfopay_(\w+)/', $datain, $dataget)) {
