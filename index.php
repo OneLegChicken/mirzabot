@@ -4973,7 +4973,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             sendmessage($from_id, 'مبلغ نهایی پرداخت باید بین ' . number_format($minimum) . ' تا ' . number_format($maximum) . ' تومان باشد.', null, 'HTML');
             return;
         }
-        $orderId = bin2hex(random_bytes(12));
+        // invoice.id_payment and service_other.id_payment are VARCHAR(20).
+        $orderId = bin2hex(random_bytes(10));
         $date = date('Y/m/d H:i:s');
         try {
             $stmt = $pdo->prepare("INSERT INTO payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,fee_amount,gross_amount) VALUES (?,?,?,?,?,?,?,?,?)");

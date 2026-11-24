@@ -42,6 +42,20 @@ return static function (PDO $pdo, Schema $schema): void {
     if (!$indexExists('payment_report', 'idx_payreport_id_order')) {
         $run('id_order_index', "ALTER TABLE `payment_report` ADD INDEX `idx_payreport_id_order` (`id_order`)");
     }
+    // Child payment references require a unique parent key. Keep this migration
+    // repeatable and avoid failing forever on legacy duplicate order IDs.
+    if (!$indexExists('payment_report', 'uq_payreport_id_order')) {
+        $duplicates = (int) $pdo->query("SELECT COUNT(*) FROM (SELECT id_order FROM payment_report WHERE id_order IS NOT NULL GROUP BY id_order HAVING COUNT(*) > 1) duplicate_orders")->fetchColumn();
+        if ($duplicates === 0) {
+            $run('id_order_unique', "ALTER TABLE `payment_report` ADD UNIQUE INDEX `uq_payreport_id_order` (`id_order`)");
+        } else {
+            error_log('[db:migration:id_payment_link] duplicate payment_report.id_order values found; foreign keys skipped');
+            return;
+        }
+    }
+    if (!$indexExists('payment_report', 'uq_payreport_id_order')) {
+        return;
+    }
 
     foreach (['invoice' => ['idx_invoice_id_payment', 'fk_invoice_payment_report'], 'service_other' => ['idx_serviceother_id_payment', 'fk_service_other_payment_report']] as $table => [$indexName, $foreignKeyName]) {
         $idPayment = $columnInfo($table, 'id_payment');
