@@ -4984,7 +4984,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $minimum = (int) config_get('pay', 'minbalancedigipaycredit', '20000');
         $maximum = (int) config_get('pay', 'maxbalancedigipaycredit', '1000000');
         if ($gross < $minimum || $gross > $maximum) {
-            sendmessage($from_id, 'مبلغ نهایی پرداخت برای استفاده از درگاه اعتباری دیجی‌پی باید بین ' . number_format($minimum) . ' تا ' . number_format($maximum) . ' تومان باشد.\nلطفاً برای مبالغ کمتر از ' . number_format($minimum) . ' تومان یا بیشتر از ' . number_format($maximum) . ' تومان، از سایر روش‌های پرداخت مانند کارت‌به‌کارت استفاده کنید.', null, 'HTML');
+            sendmessage($from_id, 'مبلغ نهایی پرداخت برای استفاده از درگاه اعتباری دیجی‌پی باید بین ' . number_format($minimum) . ' تا ' . number_format($maximum) . ' تومان باشد.' . "\n" . 'لطفاً برای مبالغ کمتر از ' . number_format($minimum) . ' تومان یا بیشتر از ' . number_format($maximum) . ' تومان، از سایر روش‌های پرداخت مانند کارت‌به‌کارت استفاده کنید.', null, 'HTML');
             return;
         }
         // invoice.id_payment and service_other.id_payment are VARCHAR(20).
