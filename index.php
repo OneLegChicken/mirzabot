@@ -220,9 +220,42 @@ if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{20})$/', $datain, $dpAct
     sendmessage($from_id, 'از خرید شما سپاسگزاریم. درخواست پرداخت ثبت شد و سفارش پس از بررسی مدیر ارسال می‌شود.', $keyboard, 'HTML');
     updatePaymentMessageId($message_id, $payment['id_order']);
     $adminKb = json_encode(['inline_keyboard' => [[['text' => 'تأیید پرداخت', 'callback_data' => 'Confirm_pay_' . $payment['id_order']], ['text' => 'رد پرداخت', 'callback_data' => 'reject_pay_' . $payment['id_order']]]]], JSON_UNESCAPED_UNICODE);
+    $buyer = select('user', '*', 'id', $from_id, 'select') ?: [];
+    $buyerName = trim((string) ($buyer['first_name'] ?? $first_name ?? ''));
+    $buyerUsername = trim((string) ($buyer['username'] ?? $username ?? ''));
+    $details = "درخواست تأیید پرداخت اعتباری دیجی‌پی\n";
+    $orderData = paymentOrder($payment['id_order']);
+    if ($orderData['invoice']) {
+        $invoice = $orderData['invoice'];
+        $details .= "نوع سفارش: خرید سرویس جدید\n";
+        $details .= "نام کاربری سرویس: " . ($invoice['username'] ?? '—') . "\n";
+        $details .= "نام محصول: " . ($invoice['name_product'] ?? '—') . "\n";
+        $details .= "حجم: " . ($invoice['Volume'] ?? '—') . "\n";
+        $details .= "مدت: " . ($invoice['Service_time'] ?? '—') . " روز\n";
+    } elseif ($orderData['service']) {
+        $service = $orderData['service'];
+        $serviceValue = json_decode((string) ($service['value'] ?? ''), true) ?: [];
+        $details .= "نوع سفارش: " . ($service['type'] ?? 'سرویس') . "\n";
+        $details .= "نام کاربری سرویس: " . ($service['username'] ?? '—') . "\n";
+        if (isset($serviceValue['code_product'])) $details .= "محصول: " . $serviceValue['code_product'] . "\n";
+        if (isset($serviceValue['volumebuy'])) $details .= "حجم افزوده: " . $serviceValue['volumebuy'] . "\n";
+        if (isset($serviceValue['volume_value'])) $details .= "حجم افزوده: " . $serviceValue['volume_value'] . "\n";
+        if (isset($serviceValue['day'])) $details .= "زمان افزوده: " . $serviceValue['day'] . " روز\n";
+        if (isset($serviceValue['Service_time'])) $details .= "مدت تمدید: " . $serviceValue['Service_time'] . " روز\n";
+    } else {
+        $details .= "نوع سفارش: افزایش موجودی کیف پول\n";
+    }
+    $details .= "نام مشتری: " . ($buyerName !== '' ? $buyerName : '—') . "\n";
+    $details .= "شناسه کاربر: " . $from_id . "\n";
+    if ($buyerUsername !== '' && $buyerUsername !== 'none') $details .= "نام کاربری تلگرام: @" . ltrim($buyerUsername, '@') . "\n";
+    $details .= "موجودی فعلی کیف پول: " . number_format((int) ($buyer['Balance'] ?? 0)) . " تومان\n";
+    $details .= "کد پیگیری پرداخت: " . $payment['id_order'] . "\n";
+    $details .= "مبلغ سفارش: " . number_format((int) $payment['price']) . " تومان\n";
+    if ((int) ($payment['fee_amount'] ?? 0) > 0) $details .= "کارمزد درگاه: " . number_format((int) $payment['fee_amount']) . " تومان\n";
+    $details .= "مبلغ نهایی پرداخت: " . number_format((int) ($payment['gross_amount'] ?? $payment['price'])) . " تومان";
     foreach ($admin_ids as $adminId) {
         $adminRow = select('admin', '*', 'id_admin', $adminId, 'select');
-        if (($adminRow['rule'] ?? '') === 'administrator') sendmessage($adminId, 'درخواست تأیید پرداخت اعتباری دیجی‌پی\nمبلغ: ' . number_format($payment['gross_amount']) . ' تومان\nسفارش: ' . $payment['id_order'] . '\nکاربر: ' . $from_id, $adminKb, 'HTML');
+        if (($adminRow['rule'] ?? '') === 'administrator') sendmessage($adminId, $details, $adminKb, 'HTML');
     }
     return;
 }
