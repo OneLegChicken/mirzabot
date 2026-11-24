@@ -204,7 +204,7 @@ if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{20})$/', $datain, $dpAct
             sendmessage($from_id, 'ارسال تصویر QR ناموفق بود. لطفاً مدیر ربات را مطلع کنید.', null, 'HTML');
             return;
         }
-        $kb = json_encode(['inline_keyboard' => [[['text' => 'پرداخت کردم', 'callback_data' => 'digipaypaid_' . $payment['id_order'], 'style' => 'success'], ['text' => 'انصراف از پرداخت', 'callback_data' => 'digipaycancel_' . $payment['id_order'], 'style' => 'danger']]]], JSON_UNESCAPED_UNICODE);
+        $kb = json_encode(['inline_keyboard' => [[['text' => 'ارسال رسید پرداخت', 'callback_data' => 'sendresiddigipay-' . $payment['id_order'], 'style' => 'success'], ['text' => 'انصراف از پرداخت', 'callback_data' => 'digipaycancel_' . $payment['id_order'], 'style' => 'danger']]]], JSON_UNESCAPED_UNICODE);
         $buttonResult = telegram('sendmessage', ['chat_id' => $from_id, 'text' => 'پس از پرداخت، دکمهٔ سبز را بزنید؛ برای لغو از دکمهٔ قرمز استفاده کنید.', 'reply_markup' => $kb, 'parse_mode' => 'HTML']);
         if (empty($buttonResult['ok'])) {
             error_log('DigiPay QR buttons send failed: ' . ($buttonResult['description'] ?? 'unknown Telegram API error'));
@@ -5848,6 +5848,15 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $message_id = sendmessage($from_id, $textstar, $paymentkeyboard, 'HTML');
         updatePaymentMessageId($message_id, $randomString);
     }
+} elseif (preg_match('/^sendresiddigipay-([a-f0-9]{20})$/', $datain, $dataget)) {
+    $payment = select('payment_report', '*', 'id_order', $dataget[1], 'select');
+    if (!$payment || (string) $payment['id_user'] !== (string) $from_id || $payment['Payment_Method'] !== 'DigiPay credit' || !in_array($payment['payment_Status'], ['Unpaid', 'waiting'], true)) {
+        sendmessage($from_id, 'این درخواست پرداخت معتبر یا فعال نیست.', null, 'HTML');
+        return;
+    }
+    sendmessage($from_id, $textbotlang['users']['Balance']['askReceiptImage'], $backuser, 'HTML');
+    step('cart_to_cart_user', $from_id);
+    update('user', 'Processing_value', $payment['id_order'], 'id', $from_id);
 } elseif (preg_match('/^sendresidcart-(.*)/', $datain, $dataget)) {
     $timefivemin = time() - 120;
     $timefivemin = date('Y/m/d H:i:s', intval($timefivemin));
