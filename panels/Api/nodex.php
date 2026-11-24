@@ -52,6 +52,37 @@ function getuser_nodex($username, $location)
     return $response;
 }
 
+function nodex_subscription_usage_points($username, $location, $window)
+{
+    if (!in_array($window, ['hours=168', 'days=30'], true)) {
+        return null;
+    }
+    $response = request_nodex($location, 'GET', '/subscriptions/' . rawurlencode($username) . '/hourly-usage?' . $window);
+    if (!empty($response['error']) || (int) ($response['status'] ?? 500) >= 400) {
+        return null;
+    }
+    $data = json_decode($response['body'] ?? '', true);
+    if (!is_array($data) || !isset($data['hourly_usage']) || !is_array($data['hourly_usage'])) {
+        return null;
+    }
+    usort($data['hourly_usage'], static function ($left, $right) {
+        $leftHour = strtotime((string) ($left['hour'] ?? ''));
+        $rightHour = strtotime((string) ($right['hour'] ?? ''));
+        if ($leftHour === false || $rightHour === false) {
+            return strcmp((string) ($left['hour'] ?? ''), (string) ($right['hour'] ?? ''));
+        }
+        return $leftHour <=> $rightHour;
+    });
+    $usage = [];
+    foreach ($data['hourly_usage'] as $point) {
+        if (!is_array($point) || !isset($point['usage']) || !is_numeric($point['usage'])) {
+            continue;
+        }
+        $usage[] = max(0, (float) $point['usage']);
+    }
+    return $usage;
+}
+
 function nodex_error($response)
 {
     if (!empty($response['error'])) {

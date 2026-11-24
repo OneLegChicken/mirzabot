@@ -2333,6 +2333,11 @@ User subscription link:
 📶 Last connection time: %s
 🔄 Last subscription link update time: %s
 #️⃣ Connected client:<code>%s</code>',
+                        'nodeXUsage' => '
+📊 This service usage: last 24h %s | 7 days %s | 30 days %s
+📈 Average daily usage over 7 days: %s',
+                        'nodeXEstimatedDays' => '
+⏳ Estimated time until traffic runs out at this rate: %s',
                         'serviceReport' => '
 📌 Service report 
 🔗  Service type: %s
