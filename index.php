@@ -166,7 +166,7 @@ if ($from_id != 0) {
     }
 }
 $user = select("user", "*", "id", $from_id, "select");
-if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{24})$/', $datain, $dpAction)) {
+if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{20})$/', $datain, $dpAction)) {
     telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
     $payment = select('payment_report', '*', 'id_order', $dpAction[2], 'select');
     if (!$payment || (string) $payment['id_user'] !== (string) $from_id || $payment['Payment_Method'] !== 'DigiPay credit') return;
