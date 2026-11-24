@@ -213,6 +213,9 @@ function telegram($method, $datas = [], $token = null, $allowEmojiFallback = tru
             ? stripCustomEmojiPayload($datas)
             : applyCustomEmojiPayload($datas);
     }
+    if (isset($datas['reply_markup'])) {
+        $datas['reply_markup'] = styleNavigationInlineButtons($datas['reply_markup']);
+    }
 
     $ch = curl_init($url);
     if ($ch === false) {
