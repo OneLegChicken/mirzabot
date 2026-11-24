@@ -69,6 +69,37 @@ function stripCustomEmojiFromMarkup($replyMarkup)
         return $button;
     });
 }
+function styleNavigationInlineButtons($replyMarkup)
+{
+    if (!is_string($replyMarkup)) return $replyMarkup;
+    $markup = json_decode($replyMarkup, true);
+    if (!is_array($markup) || empty($markup['inline_keyboard']) || !is_array($markup['inline_keyboard'])) return $replyMarkup;
+    global $textbotlang;
+    $labels = [
+        $textbotlang['users']['backbtn'] ?? '',
+        $textbotlang['Admin']['backMenuBtn'] ?? '',
+        $textbotlang['keyboard']['back'] ?? '',
+        $textbotlang['keyboard']['backToMainMenu'] ?? '',
+        $textbotlang['keyboard']['backToMainMenu2'] ?? '',
+        $textbotlang['keyboard']['backToPrev'] ?? '',
+        $textbotlang['keyboard']['backToPrevMenu2'] ?? '',
+        $textbotlang['keyboard']['backToPreviousMenu'] ?? '',
+        $textbotlang['users']['status']['backinfo'] ?? '',
+        $textbotlang['keyboard']['closeList'] ?? '',
+    ];
+    $labels = array_filter(array_unique($labels), static fn($label) => is_string($label) && $label !== '');
+    foreach ($markup['inline_keyboard'] as &$row) {
+        if (!is_array($row)) continue;
+        foreach ($row as &$button) {
+            if (is_array($button) && isset($button['text']) && in_array($button['text'], $labels, true)) {
+                $button['style'] = 'danger';
+            }
+        }
+        unset($button);
+    }
+    unset($row);
+    return json_encode($markup, JSON_UNESCAPED_UNICODE) ?: $replyMarkup;
+}
 function payloadHasCustomEmoji(array $datas)
 {
     foreach (['text', 'caption', 'reply_markup'] as $key) {
@@ -89,6 +120,7 @@ function applyCustomEmojiPayload(array $datas)
     }
     if (isset($datas['reply_markup'])) {
         $datas['reply_markup'] = applyCustomEmojiToMarkup($datas['reply_markup']);
+        $datas['reply_markup'] = styleNavigationInlineButtons($datas['reply_markup']);
     }
     return $datas;
 }
