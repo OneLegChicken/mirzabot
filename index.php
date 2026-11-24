@@ -167,6 +167,7 @@ if ($from_id != 0) {
 }
 $user = select("user", "*", "id", $from_id, "select");
 if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{24})$/', $datain, $dpAction)) {
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
     $payment = select('payment_report', '*', 'id_order', $dpAction[2], 'select');
     if (!$payment || (string) $payment['id_user'] !== (string) $from_id || $payment['Payment_Method'] !== 'DigiPay credit') return;
     if ($dpAction[1] === 'cancel') {
@@ -4974,8 +4975,14 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         }
         $orderId = bin2hex(random_bytes(12));
         $date = date('Y/m/d H:i:s');
-        $stmt = $pdo->prepare("INSERT INTO payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,fee_amount,gross_amount) VALUES (?,?,?,?,?,?,?,?,?)");
-        $stmt->execute([$from_id, $orderId, $date, $base, 'Unpaid', 'DigiPay credit', json_encode(['step' => $user['step'], 'order_id' => $user['Processing_value_one']], JSON_UNESCAPED_UNICODE), $fee, $gross]);
+        try {
+            $stmt = $pdo->prepare("INSERT INTO payment_report (id_user,id_order,time,price,payment_Status,Payment_Method,id_invoice,fee_amount,gross_amount) VALUES (?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$from_id, $orderId, $date, $base, 'Unpaid', 'DigiPay credit', json_encode(['step' => $user['step'], 'order_id' => $user['Processing_value_one']], JSON_UNESCAPED_UNICODE), $fee, $gross]);
+        } catch (Throwable $e) {
+            error_log('DigiPay credit request could not be created: ' . $e->getMessage());
+            sendmessage($from_id, 'ثبت درخواست پرداخت انجام نشد. لطفاً مدیر ربات را مطلع کنید.', null, 'HTML');
+            return;
+        }
         linkPaymentToOrder($orderId, $user);
         $terms = trim((string) config_get('pay', 'digipaycredit_help', ''));
         $amountText = $fee > 0
