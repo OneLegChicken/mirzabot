@@ -1152,7 +1152,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $keyboarddate = array(
             'updateinfo' => array(
                 'text' => $textbotlang['keyboard']['refreshInfo'],
-                'callback_data' => "updateproduct_"
+                'callback_data' => "updateproduct_",
+                'style' => 'primary'
             ),
             'linksub' => array(
                 'text' => $textbotlang['users']['status']['linksub'],
@@ -1188,7 +1189,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             ),
             'changestatus' => array(
                 'text' => $namestatus,
-                'callback_data' => "changestatus_"
+                'callback_data' => "changestatus_",
+                'style' => $DataUserOut['status'] == 'active' ? 'danger' : 'success'
             ),
             'transfor' => array(
                 'text' => $textbotlang['users']['transfer']['title'],
@@ -1261,7 +1263,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $tempArray = [];
         $keyboardsetting = ['inline_keyboard' => []];
         foreach ($keyboarddate as $keyboardtext) {
-            $tempArray[] = ['text' => $keyboardtext['text'], 'callback_data' => $keyboardtext['callback_data'] . $username];
+            $button = ['text' => $keyboardtext['text'], 'callback_data' => $keyboardtext['callback_data'] . $username];
+            if (isset($keyboardtext['style'])) $button['style'] = $keyboardtext['style'];
+            $tempArray[] = $button;
             if (count($tempArray) == 2 or $keyboardtext['text'] == $textbotlang['users']['status']['btnRefresh']) {
                 $keyboardsetting['inline_keyboard'][] = $tempArray;
                 $tempArray = [];
@@ -1270,7 +1274,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         if (count($tempArray) > 0) {
             $keyboardsetting['inline_keyboard'][] = $tempArray;
         }
-        $keyboardsetting['inline_keyboard'][] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder']];
+        $keyboardsetting['inline_keyboard'][] = [['text' => $textbotlang['users']['status']['backlist'], 'callback_data' => 'backorder', 'style' => 'primary']];
         $keyboardsetting = json_encode($keyboardsetting);
         if ($DataUserOut['sub_updated_at'] !== null) {
             $textconnect = sprintf($textbotlang['users']['status']['connectionInfo'], $lastonline, $lastupdate, $DataUserOut['sub_last_user_agent']);

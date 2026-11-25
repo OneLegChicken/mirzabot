@@ -185,6 +185,32 @@ function customEmojiBlocked($token = null, $block = false)
     }
     return $state[$key];
 }
+function styleNavigationInlineButtons($replyMarkup)
+{
+    if (!is_string($replyMarkup)) return $replyMarkup;
+    $markup = json_decode($replyMarkup, true);
+    if (!is_array($markup) || empty($markup['inline_keyboard'])) return $replyMarkup;
+    global $textbotlang;
+    $labels = [
+        $textbotlang['users']['backbtn'] ?? '',
+        $textbotlang['users']['status']['backinfo'] ?? '',
+        $textbotlang['keyboard']['back'] ?? '',
+        $textbotlang['keyboard']['backToMainMenu'] ?? '',
+        $textbotlang['keyboard']['backToMainMenu2'] ?? '',
+        $textbotlang['keyboard']['backToPreviousMenu'] ?? '',
+        $textbotlang['keyboard']['backToPrev'] ?? '',
+        $textbotlang['keyboard']['backToPrevMenu2'] ?? '',
+    ];
+    foreach ($markup['inline_keyboard'] as &$row) {
+        foreach ($row as &$button) {
+            if (is_array($button) && isset($button['text']) && in_array($button['text'], $labels, true)) $button['style'] = 'primary';
+        }
+        unset($button);
+    }
+    unset($row);
+    return json_encode($markup, JSON_UNESCAPED_UNICODE) ?: $replyMarkup;
+}
+
 function telegram($method, $datas = [], $token = null, $allowEmojiFallback = true)
 {
     global $APIKEY;
@@ -213,6 +239,7 @@ function telegram($method, $datas = [], $token = null, $allowEmojiFallback = tru
             ? stripCustomEmojiPayload($datas)
             : applyCustomEmojiPayload($datas);
     }
+    if (isset($datas['reply_markup'])) $datas['reply_markup'] = styleNavigationInlineButtons($datas['reply_markup']);
     if (isset($datas['reply_markup'])) {
         $datas['reply_markup'] = styleNavigationInlineButtons($datas['reply_markup']);
     }
