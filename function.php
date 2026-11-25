@@ -671,6 +671,18 @@ function rate_arze()
     }
     return $decoded['result'];
 }
+function serviceStatusChip($status)
+{
+    $chips = [
+        'active' => ' 🟢',
+        'sendedwarn' => ' ⚠️',
+        'send_on_hold' => ' ⏸️',
+        'end_of_time' => ' ⌛️',
+        'end_of_volume' => ' 📊',
+    ];
+    return $chips[$status] ?? '';
+}
+
 function buildAccountSummary($userId)
 {
     global $pdo, $textbotlang, $setting;

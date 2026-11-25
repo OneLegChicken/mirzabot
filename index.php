@@ -595,7 +595,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨",
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -604,7 +604,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨",
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -660,7 +660,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨",
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -669,7 +669,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨",
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -729,7 +729,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨",
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -738,7 +738,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨",
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -923,7 +923,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                     $data = " | {$row['note']}";
                 $keyboardlists['inline_keyboard'][] = [
                     [
-                        'text' => "✨" . $row['username'] . $data . "✨",
+                        'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                         'callback_data' => "product_" . $row['id_invoice']
                     ],
                 ];
@@ -932,7 +932,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $keyboardlists['inline_keyboard'][] = [
                     [
-                        'text' => "✨" . $row['username'] . "✨",
+                        'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                         'callback_data' => "product_" . $row['id_invoice']
                     ],
                 ];
@@ -6713,7 +6713,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨",
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6722,7 +6722,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨",
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6774,7 +6774,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨",
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6783,7 +6783,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨",
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6839,7 +6839,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨",
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6848,7 +6848,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨",
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
