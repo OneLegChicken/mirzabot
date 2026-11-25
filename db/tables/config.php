@@ -65,6 +65,7 @@ $settingValues = [
     'api_token' => '',
     'alert_balance' => '0',
     'balance_value_alert' => '10000',
+    'accountsummary' => 'onsummary',
 ];
 
 $payValues = [

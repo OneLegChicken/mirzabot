@@ -227,6 +227,7 @@ return [
 
 ✨ حالا نام کاربری موردنظرت رو ارسال کن.',
                 'text_start' => 'سلام خوش آمدید',
+                'summary' => ['title' => '📊 <b>نمای کلی حساب شما</b>', 'activeLine' => '🟢 سرویس‌های فعال: {count}', 'expiredLine' => '⌛️ سرویس‌های منقضی: {count}', 'balanceLine' => '💵 موجودی کیف پول: {value} تومان'],
                 'Balance' => [
                         'addBalanceUser' => '⭕️ اضافه کردن دستی موجودی',
                         'blockedfake' => '⭕️ بلاک کردن کاربر',
