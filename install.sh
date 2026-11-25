@@ -1,7 +1,7 @@
 #!/bin/bash
 # Repository and branch used by this fork's installer.
 INSTALL_REPO="OneLegChicken/mirzabot"
-INSTALL_BRANCH="main"
+INSTALL_BRANCH="experiment/account-overview"
 
 # Checking Root Access
 if [[ $EUID -ne 0 ]]; then
