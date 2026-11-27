@@ -1104,7 +1104,7 @@ Top up your wallet to buy or renew services.',
 🔄 Last subscription link update time  : %s
 #️⃣ Connected client :<code>%s</code>',
                         'nodeXUsage' => '
-📊 This service usage: last 24h %s | 7 days %s | 30 days %s
+📊 Usage in the last 24 hours: %s
 📈 Average daily usage over 7 days: %s',
                         'nodeXEstimatedDays' => '
 ⏳ Estimated time until traffic runs out at this rate: %s',
@@ -2340,7 +2340,7 @@ User subscription link:
 🔄 Last subscription link update time: %s
 #️⃣ Connected client:<code>%s</code>',
                         'nodeXUsage' => '
-📊 This service usage: last 24h %s | 7 days %s | 30 days %s
+📊 Usage in the last 24 hours: %s
 📈 Average daily usage over 7 days: %s',
                         'nodeXEstimatedDays' => '
 ⏳ Estimated time until traffic runs out at this rate: %s',
