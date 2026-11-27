@@ -166,13 +166,16 @@ if ($from_id != 0) {
     }
 }
 $user = select("user", "*", "id", $from_id, "select");
-if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{20})$/', $datain, $dpAction)) {
+if (preg_match('/^digipay(accept|cancel)_([a-f0-9]{20})$/D', $datain, $dpAction)) {
     telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
     $payment = select('payment_report', '*', 'id_order', $dpAction[2], 'select');
     if (!$payment || (string) $payment['id_user'] !== (string) $from_id || $payment['Payment_Method'] !== 'DigiPay credit') return;
     if ($dpAction[1] === 'cancel') {
         if ($payment['payment_Status'] !== 'Unpaid') return;
-        update('payment_report', 'payment_Status', 'expire', 'id_order', $payment['id_order']);
+        $cancel = $pdo->prepare("UPDATE payment_report SET payment_Status = 'expire' WHERE id_order = ? AND Payment_Method = 'DigiPay credit' AND payment_Status = 'Unpaid'");
+        $cancel->execute([$payment['id_order']]);
+        if ($cancel->rowCount() !== 1) return;
+        clearSelectCache('payment_report');
         $ctx = json_decode((string) $payment['id_invoice'], true) ?: [];
         $pdo->prepare("UPDATE invoice SET id_payment = NULL WHERE id_payment = ?")->execute([$payment['id_order']]);
         $pdo->prepare("UPDATE service_other SET id_payment = NULL WHERE id_payment = ?")->execute([$payment['id_order']]);
@@ -197,7 +200,7 @@ if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{20})$/', $datain, $dpAct
         $caption = htmlspecialchars(trim((string) config_get('pay', 'digipaycredit_help', '')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $caption .= ($caption !== '' ? "\n\n" : '') . 'مبلغ قابل پرداخت: ' . number_format($gross) . ' تومان';
         if ($fee > 0) $caption .= "\n(مبلغ سفارش " . number_format($payment['price']) . ' + کارمزد ' . number_format($fee) . ' تومان)';
-        $caption .= "\n\nلطفاً پس از پرداخت، دکمهٔ سبز «پرداخت کردم» را بزنید؛ در غیر این صورت سفارش شما در سیستم ثبت نمی‌شود.";
+        $caption .= "\n\nلطفاً پس از پرداخت، دکمهٔ سبز «ارسال رسید پرداخت» را بزنید و عکس رسید را بفرستید تا پرداخت بررسی شود.";
         $photoResult = telegram('sendphoto', ['chat_id' => $from_id, 'photo' => $qr, 'caption' => $caption, 'parse_mode' => 'HTML']);
         if (empty($photoResult['ok'])) {
             error_log('DigiPay QR send failed: ' . ($photoResult['description'] ?? 'unknown Telegram API error'));
@@ -212,52 +215,6 @@ if (preg_match('/^digipay(accept|paid|cancel)_([a-f0-9]{20})$/', $datain, $dpAct
         }
         return;
     }
-    if ($payment['payment_Status'] !== 'Unpaid') return;
-    $claim = $pdo->prepare("UPDATE payment_report SET payment_Status='waiting', at_updated=? WHERE id_order=? AND payment_Status='Unpaid'");
-    $claim->execute([date('Y/m/d H:i:s'), $payment['id_order']]);
-    if ($claim->rowCount() < 1) return;
-    telegram('editMessageReplyMarkup', ['chat_id' => $from_id, 'message_id' => $message_id, 'reply_markup' => json_encode(['inline_keyboard' => []])]);
-    sendmessage($from_id, 'از خرید شما سپاسگزاریم. درخواست پرداخت ثبت شد و سفارش پس از بررسی مدیر ارسال می‌شود.', $keyboard, 'HTML');
-    updatePaymentMessageId($message_id, $payment['id_order']);
-    $adminKb = json_encode(['inline_keyboard' => [[['text' => 'تأیید پرداخت', 'callback_data' => 'Confirm_pay_' . $payment['id_order']], ['text' => 'رد پرداخت', 'callback_data' => 'reject_pay_' . $payment['id_order']]]]], JSON_UNESCAPED_UNICODE);
-    $buyer = select('user', '*', 'id', $from_id, 'select') ?: [];
-    $buyerName = trim((string) ($buyer['first_name'] ?? $first_name ?? ''));
-    $buyerUsername = trim((string) ($buyer['username'] ?? $username ?? ''));
-    $details = "درخواست تأیید پرداخت اعتباری دیجی‌پی\n";
-    $orderData = paymentOrder($payment['id_order']);
-    if ($orderData['invoice']) {
-        $invoice = $orderData['invoice'];
-        $details .= "نوع سفارش: خرید سرویس جدید\n";
-        $details .= "نام کاربری سرویس: " . ($invoice['username'] ?? '—') . "\n";
-        $details .= "نام محصول: " . ($invoice['name_product'] ?? '—') . "\n";
-        $details .= "حجم: " . ($invoice['Volume'] ?? '—') . "\n";
-        $details .= "مدت: " . ($invoice['Service_time'] ?? '—') . " روز\n";
-    } elseif ($orderData['service']) {
-        $service = $orderData['service'];
-        $serviceValue = json_decode((string) ($service['value'] ?? ''), true) ?: [];
-        $details .= "نوع سفارش: " . ($service['type'] ?? 'سرویس') . "\n";
-        $details .= "نام کاربری سرویس: " . ($service['username'] ?? '—') . "\n";
-        if (isset($serviceValue['code_product'])) $details .= "محصول: " . $serviceValue['code_product'] . "\n";
-        if (isset($serviceValue['volumebuy'])) $details .= "حجم افزوده: " . $serviceValue['volumebuy'] . "\n";
-        if (isset($serviceValue['volume_value'])) $details .= "حجم افزوده: " . $serviceValue['volume_value'] . "\n";
-        if (isset($serviceValue['day'])) $details .= "زمان افزوده: " . $serviceValue['day'] . " روز\n";
-        if (isset($serviceValue['Service_time'])) $details .= "مدت تمدید: " . $serviceValue['Service_time'] . " روز\n";
-    } else {
-        $details .= "نوع سفارش: افزایش موجودی کیف پول\n";
-    }
-    $details .= "نام مشتری: " . ($buyerName !== '' ? $buyerName : '—') . "\n";
-    $details .= "شناسه کاربر: " . $from_id . "\n";
-    if ($buyerUsername !== '' && $buyerUsername !== 'none') $details .= "نام کاربری تلگرام: @" . ltrim($buyerUsername, '@') . "\n";
-    $details .= "موجودی فعلی کیف پول: " . number_format((int) ($buyer['Balance'] ?? 0)) . " تومان\n";
-    $details .= "کد پیگیری پرداخت: " . $payment['id_order'] . "\n";
-    $details .= "مبلغ سفارش: " . number_format((int) $payment['price']) . " تومان\n";
-    if ((int) ($payment['fee_amount'] ?? 0) > 0) $details .= "کارمزد درگاه: " . number_format((int) $payment['fee_amount']) . " تومان\n";
-    $details .= "مبلغ نهایی پرداخت: " . number_format((int) ($payment['gross_amount'] ?? $payment['price'])) . " تومان";
-    foreach ($admin_ids as $adminId) {
-        $adminRow = select('admin', '*', 'id_admin', $adminId, 'select');
-        if (($adminRow['rule'] ?? '') === 'administrator') sendmessage($adminId, $details, $adminKb, 'HTML');
-    }
-    return;
 }
 if ($user == false) {
     $user = array();
@@ -5875,7 +5832,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $message_id = sendmessage($from_id, $textstar, $paymentkeyboard, 'HTML');
         updatePaymentMessageId($message_id, $randomString);
     }
-} elseif (preg_match('/^sendresiddigipay-([a-f0-9]{20})$/', $datain, $dataget)) {
+} elseif (preg_match('/^(?:sendresiddigipay-|digipaypaid_)([a-f0-9]{20})$/D', $datain, $dataget)) {
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
     $payment = select('payment_report', '*', 'id_order', $dataget[1], 'select');
     if (!$payment || (string) $payment['id_user'] !== (string) $from_id || $payment['Payment_Method'] !== 'DigiPay credit' || !in_array($payment['payment_Status'], ['Unpaid', 'waiting'], true)) {
         sendmessage($from_id, 'این درخواست پرداخت معتبر یا فعال نیست.', null, 'HTML');
@@ -5915,7 +5873,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     update("user", "Processing_value", $dataget[1], "id", $from_id);
 } elseif (preg_match('/^sendresidarze-(.*)/', $datain, $dataget) and $text_inline != null) {
     $payemntcheck = select("payment_report", "*", "id_order", $dataget[1], "select");
-    if (!is_array($payemntcheck) || (string) $payemntcheck['id_user'] !== (string) $from_id) {
+    if (!is_array($payemntcheck) || (string) $payemntcheck['id_user'] !== (string) $from_id || $payemntcheck['Payment_Method'] === 'DigiPay credit') {
         return;
     }
     if ($payemntcheck['payment_Status'] == "paid") {
@@ -5934,11 +5892,11 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     $format_balance = number_format($user['Balance'], 0);
     step('home', $from_id);
     $PaymentReport = select("payment_report", "*", "id_order", $user['Processing_value'], "select");
-    $Paymentusercount = select("payment_report", "*", "id_user", $PaymentReport['id_user'], "count");
-    if ($PaymentReport == false) {
+    if ($PaymentReport == false || $PaymentReport['Payment_Method'] === 'DigiPay credit') {
         sendmessage($from_id, $textbotlang['users']['Balance']['restartPurchaseOrPay'], $keyboard, 'HTML');
         return;
     }
+    $Paymentusercount = select("payment_report", "*", "id_user", $PaymentReport['id_user'], "count");
     $Confirm_pay = json_encode([
         'inline_keyboard' => [
             [
@@ -6047,6 +6005,16 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         sendmessage($from_id, $textbotlang['users']['infoFetchErrorRestart'], $keyboard, 'HTML');
         return;
     }
+    $isDigipay = $PaymentReport['Payment_Method'] === 'DigiPay credit';
+    if ($isDigipay) {
+        $receipt = $pdo->prepare("UPDATE payment_report SET payment_Status = 'waiting', at_updated = ? WHERE id_order = ? AND id_user = ? AND Payment_Method = 'DigiPay credit' AND payment_Status IN ('Unpaid', 'waiting')");
+        $receipt->execute([date('Y/m/d H:i:s'), $PaymentReport['id_order'], $from_id]);
+        if ($receipt->rowCount() !== 1) {
+            sendmessage($from_id, 'این درخواست پرداخت معتبر یا فعال نیست، یا رسید آن همین حالا ثبت شده است.', $keyboard, 'HTML');
+            return;
+        }
+        clearSelectCache('payment_report');
+    }
     $Confirm_pay = json_encode([
         'inline_keyboard' => [
             [
@@ -6125,9 +6093,18 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $textsendrasid = sprintf($textbotlang['Admin']['reportgroup']['newPaymentBalance2'], $first_name, $from_id, $from_id, $format_balance, $PaymentReport['id_order'], $username, $format_price_cart);
         sendmessage($from_id, $textbotlang['users']['Balance']['sendReceipt'], $keyboard, 'HTML');
     }
+    if ($isDigipay) {
+        $grossAmount = (int) ($PaymentReport['gross_amount'] ?? 0);
+        $payable = number_format($grossAmount > 0 ? $grossAmount : (int) $PaymentReport['price']);
+        $textsendrasid = "💳 رسید دیجی‌پی — مبلغ نهایی: {$payable} تومان\n\n" . $textsendrasid;
+        $reviewButtons = json_decode($Confirm_pay, true);
+        $reviewButtons['inline_keyboard'][0][0]['text'] = 'بررسی پرداخت دیجی‌پی';
+        array_shift($reviewButtons['inline_keyboard'][1]);
+        $Confirm_pay = json_encode($reviewButtons, JSON_UNESCAPED_UNICODE);
+    }
     foreach ($admin_ids as $id_admin) {
-        $adminrulecheck = select("admin", "*", "id_admin", $id_admin, "select");
-        if ($adminrulecheck['rule'] == "support")
+        $recipient = select("admin", "*", "id_admin", $id_admin, "select");
+        if ($isDigipay ? ($recipient['rule'] ?? '') !== 'administrator' : $recipient['rule'] === 'support')
             continue;
         telegram('sendphoto', [
             'chat_id' => $id_admin,
@@ -6137,9 +6114,10 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         ]);
         sendmessage($id_admin, $textsendrasid, $Confirm_pay, 'HTML');
     }
-    update("payment_report", "payment_Status", "waiting", "id_order", $PaymentReport['id_order']);
-    $dateacc = date('Y/m/d H:i:s');
-    update("payment_report", "at_updated", $dateacc, "id_order", $PaymentReport['id_order']);
+    if (!$isDigipay) {
+        update("payment_report", "payment_Status", "waiting", "id_order", $PaymentReport['id_order']);
+        update("payment_report", "at_updated", date('Y/m/d H:i:s'), "id_order", $PaymentReport['id_order']);
+    }
 } elseif ($datain == "Discount") {
     $bakinfos = json_encode([
         'inline_keyboard' => [

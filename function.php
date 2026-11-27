@@ -1177,7 +1177,7 @@ function paymentOrder($order_id): array
 function claimPaymentPaid($order_id)
 {
     global $pdo;
-    $stmt = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid' WHERE id_order = :id_order AND payment_Status <> 'paid'");
+    $stmt = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid' WHERE id_order = :id_order AND payment_Status <> 'paid' AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
     $stmt->bindValue(':id_order', $order_id);
     $stmt->execute();
     clearSelectCache('payment_report');
