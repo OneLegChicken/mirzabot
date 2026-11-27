@@ -606,7 +606,7 @@ function usr_active_bot_agent(array $data, string $method): void
     $chec_kbot = select("botsaz", "*", "id_user", $data['chat_id'], "count");
     if ($chec_kbot != 0)
         sendJsonResponse(false, "You are allowed to build a robot.");
-    if (!preg_match('/^\d+:[A-Za-z0-9_-]{30,}$/', (string) $data['token']))
+    if (!validAgentBotToken($data['token']))
         sendJsonResponse(false, "You are allowed! Token inavlid");
     $getInfoTokenRaw = @file_get_contents("https://api.telegram.org/bot{$data['token']}/getme");
     $getInfoToken = $getInfoTokenRaw === false ? null : json_decode($getInfoTokenRaw, true);
@@ -632,13 +632,10 @@ function usr_active_bot_agent(array $data, string $method): void
         error_log('Failed to copy default bot files into: ' . $dirsource);
         sendJsonResponse(false, "unable to create bot files", [], 500);
     }
-    $contentconfig = file_get_contents($dirsource . "/config.php");
-    if ($contentconfig === false) {
-        error_log('Missing bot config template in: ' . $dirsource);
+    if (!writeAgentBotConfig($dirsource . "/config.php", $data['token'])) {
+        error_log('Failed to configure agent bot in: ' . $dirsource);
         sendJsonResponse(false, "unable to create bot files", [], 500);
     }
-    $new_code = str_replace('BotTokenNew', $data['token'], $contentconfig);
-    file_put_contents($dirsource . "/config.php", $new_code);
     $agent_secret = bin2hex(random_bytes(24));
     setAgentWebhook($data['token'], $data['chat_id'], $botUsername, $agent_secret);
     file_get_contents(sprintf($textbotlang['Admin']['agentbot']['activatedUrl'], $data['token'], $data['chat_id']));

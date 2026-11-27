@@ -671,6 +671,20 @@ function rate_arze()
     }
     return $decoded['result'];
 }
+function validAgentBotToken($token): bool
+{
+    return is_string($token) && preg_match('/\A[0-9]+:[A-Za-z0-9_-]{30,}\z/', $token) === 1;
+}
+
+function writeAgentBotConfig(string $path, $token): bool
+{
+    if (!validAgentBotToken($token)) return false;
+    $template = file_get_contents($path);
+    if ($template === false) return false;
+    $config = str_replace('"BotTokenNew"', var_export($token, true), $template, $count);
+    return $count === 1 && file_put_contents($path, $config, LOCK_EX) === strlen($config);
+}
+
 function serviceStatusChip($status)
 {
     $chips = [

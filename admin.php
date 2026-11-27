@@ -8188,8 +8188,10 @@ if (isset($update["inline_query"])) {
     sendmessage($from_id, $texbot, $backadmin, 'HTML');
     step("gettokenbot", $from_id);
 } elseif ($user['step'] == "gettokenbot") {
-    $getInfoToken = json_decode(file_get_contents("https://api.telegram.org/bot$text/getme"), true);
-    if ($getInfoToken == false or !$getInfoToken['ok']) {
+    $getInfoToken = validAgentBotToken($text)
+        ? json_decode((string) @file_get_contents("https://api.telegram.org/bot$text/getme"), true)
+        : null;
+    if (empty($getInfoToken['ok']) || empty($getInfoToken['result']['username'])) {
         sendmessage($from_id, $textbotlang['Admin']['agentbot']['invalidToken'], $backadmin, 'HTML');
         return;
     }
@@ -8210,6 +8212,12 @@ if (isset($update["inline_query"])) {
     }
     $userdate = json_decode($user['Processing_value'], true);
     step("home", $from_id);
+    if (!validAgentBotToken($userdate['token'] ?? null)
+        || !ctype_digit((string) ($userdate['id_user'] ?? ''))
+        || !preg_match('/\A[A-Za-z0-9_]{1,64}\z/', (string) ($userdate['username'] ?? ''))) {
+        sendmessage($from_id, $textbotlang['Admin']['agentbot']['invalidToken'], $backadmin, 'HTML');
+        return;
+    }
     $admin_ids = json_encode(array_values(array_unique([strval($userdate['id_user']), $text])));
     $destination = getcwd();
     $dirsource = "$destination/vpnbot/{$userdate['id_user']}{$userdate['username']}";
@@ -8219,9 +8227,10 @@ if (isset($update["inline_query"])) {
     if (!copyDirectoryContents($destination . '/vpnbot/Default', $dirsource)) {
         error_log('Failed to copy default bot files into: ' . $dirsource);
     }
-    $contentconfig = file_get_contents($dirsource . "/config.php");
-    $new_code = str_replace('BotTokenNew', $userdate['token'], $contentconfig);
-    file_put_contents($dirsource . "/config.php", $new_code);
+    if (!writeAgentBotConfig($dirsource . "/config.php", $userdate['token'])) {
+        sendmessage($from_id, $textbotlang['common']['invalidInput'], $backadmin, 'HTML');
+        return;
+    }
     $agent_secret = bin2hex(random_bytes(24));
     setAgentWebhook($userdate['token'], $userdate['id_user'], $userdate['username'], $agent_secret);
     file_get_contents(sprintf($textbotlang['Admin']['agentbot']['activatedUrlAlt'], $userdate['token'], $userdate['id_user']));
