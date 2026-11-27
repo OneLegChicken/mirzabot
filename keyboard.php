@@ -372,7 +372,7 @@ if (intval($paymentsstartelegram) == 1) {
     ];
 }
 $step_payment['inline_keyboard'][] = [
-    ['text' => $textbotlang['keyboard']['closeList'], 'callback_data' => "colselist"]
+    ['text' => $textbotlang['keyboard']['closeList'], 'callback_data' => "colselist", 'style' => 'danger']
 ];
 $step_payment = json_encode($step_payment);
 $keyboardhelpadmin = json_encode([

@@ -87,7 +87,6 @@ function styleNavigationInlineButtons($replyMarkup)
         $textbotlang['keyboard']['backToPrevMenu2'] ?? '',
         $textbotlang['keyboard']['backToPreviousMenu'] ?? '',
         $textbotlang['users']['status']['backinfo'] ?? '',
-        $textbotlang['keyboard']['closeList'] ?? '',
     ];
     $labels = array_filter(array_unique($labels), static fn($label) => is_string($label) && $label !== '');
     foreach ($markup['inline_keyboard'] as &$row) {
