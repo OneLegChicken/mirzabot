@@ -234,7 +234,7 @@ function inv_invoice_add(array $data, string $method): void
         'time' => false,
     ));
 
-    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username, time_sell, Service_location, name_product, price_product, Volume, Service_time, Status,notifctions) VALUES (:id_user, :id_invoice, :username, :time_sell, :service_location, :name_product, :price_product, :volume, :service_time, :status, :notifctions)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username, time_sell, Service_location, name_product, price_product, Volume, Service_time, Status,notifctions,subscription_token) VALUES (:id_user, :id_invoice, :username, :time_sell, :service_location, :name_product, :price_product, :volume, :service_time, :status, :notifctions, :subscription_token)");
 
     $randomString = bin2hex(random_bytes(4));
 
@@ -249,7 +249,8 @@ function inv_invoice_add(array $data, string $method): void
         ':volume' => $product['Volume_constraint'],
         ':service_time' => $product['Service_time'],
         ':status' => 'active',
-        ':notifctions' => $notifctions
+        ':notifctions' => $notifctions,
+        ':subscription_token' => newNodeXSubscriptionToken($panel)
     ]);
 
     sendJsonResponse(true, "Successful");

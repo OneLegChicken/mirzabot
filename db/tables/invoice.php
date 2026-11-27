@@ -5,6 +5,7 @@ $notifications = json_encode(['volume' => false, 'time' => false]);
 return [
     'create' => <<<SQL
         id_invoice varchar(200) PRIMARY KEY,
+        subscription_token CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL,
         id_user varchar(200) NULL,
         username varchar(300) NULL,
         Service_location varchar(300) NULL,
@@ -27,6 +28,7 @@ return [
         discount_code varchar(200) NULL
         SQL,
     'columns' => [
+        ['subscription_token', null, 'CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL'],
         ['time_sell', null, 'VARCHAR(200)'],
         ['uuid', null, 'TEXT'],
         ['note', null, 'VARCHAR(700)'],

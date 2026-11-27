@@ -21,7 +21,7 @@ class ManagePanel
         }
         return $result;
     }
-    function createUser($name_panel, $code_product, $usernameC, array $Data_Config)
+    function createUser($name_panel, $code_product, $usernameC, array $Data_Config, ?string $invoiceId = null)
     {
         $Output = [];
         global $pdo, $domainhosts, $textbotlang;
@@ -43,7 +43,9 @@ class ManagePanel
             return $Output;
         }
         if ($Get_Data_Panel['subvip'] == "onsubvip") {
-            $invoice = select("invoice", "*", "username", $usernameC, "select");
+            $invoice = $invoiceId !== null && isNodeXPanel($Get_Data_Panel)
+                ? select("invoice", "*", "id_invoice", $invoiceId, "select")
+                : select("invoice", "*", "username", $usernameC, "select");
         } else {
             $invoice = false;
         }
@@ -73,7 +75,7 @@ class ManagePanel
         $Output['msg'] = 'Panel Not Found';
         return $Output;
     }
-    function DataUser($name_panel, $username)
+    function DataUser($name_panel, $username, ?array $invoice = null)
     {
         $Output = array();
         global $pdo, $domainhosts;
@@ -85,7 +87,9 @@ class ManagePanel
             );
         }
         if (isset($Get_Data_Panel['subvip']) && $Get_Data_Panel['subvip'] == "onsubvip") {
-            $invoice = select("invoice", "*", "username", $username, "select");
+            if ($invoice === null || !isNodeXPanel($Get_Data_Panel)) {
+                $invoice = select("invoice", "*", "username", $username, "select");
+            }
         } else {
             $invoice = false;
         }
@@ -99,7 +103,7 @@ class ManagePanel
         );
         return $Output;
     }
-    function Revoke_sub($name_panel, $username)
+    function Revoke_sub($name_panel, $username, ?array $invoice = null)
     {
         $Output = array();
         $Get_Data_Panel = select("marzban_panel", "*", "name_panel", $name_panel, "select");

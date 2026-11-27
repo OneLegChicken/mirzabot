@@ -932,9 +932,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     if ($marzban['name_panel'] != null) {
         update("user", "Processing_value_four", $marzban['name_panel'], "id", $from_id);
     }
-    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username']);
+    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username'], $nameloc);
     if (isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") {
-        $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username']);
+        $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username'], $nameloc);
         if (isset($DataUserOut['msg']) && $DataUserOut['msg'] == "User not found") {
             update("invoice", "Status", "disabledn", "id_invoice", $nameloc['id_invoice']);
             sendmessage($from_id, $textbotlang['users']['status']['userNotFound'], $keyboard, 'html');
@@ -1291,7 +1291,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     if ($nameloc == false)
         return;
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
-    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username']);
+    $DataUserOut = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username'], $nameloc);
     if ($DataUserOut['status'] == "Unsuccessful") {
         sendmessage($from_id, $textbotlang['users']['status']['error'], null, 'html');
         return;
@@ -2145,7 +2145,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         return;
     }
     $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
-    $DataUserOut = $ManagePanel->Revoke_sub($nameloc['Service_location'], $nameloc['username']);
+    $DataUserOut = $ManagePanel->Revoke_sub($nameloc['Service_location'], $nameloc['username'], $nameloc);
     if ($DataUserOut['status'] == "Unsuccessful") {
         sendmessage($from_id, $textbotlang['users']['changeLink']['error'], null, 'HTML');
         return;
@@ -3241,13 +3241,13 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions) VALUES (?, ?,  ?, ?, ?, ?, ?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions,subscription_token) VALUES (?, ?,  ?, ?, ?, ?, ?,?,?,?,?, ?)");
     $Status = "active";
     $info_product['name_product'] = $textbotlang['common']['labels']['testService5'];
     $info_product['price_product'] = "0";
     $Status = "active";
-    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $marzban_list_get['val_usertest'], $marzban_list_get['time_usertest'], $Status, $notifctions]);
-    $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], "usertest", $username_ac, $datac);
+    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $info_product['price_product'], $marzban_list_get['val_usertest'], $marzban_list_get['time_usertest'], $Status, $notifctions, newNodeXSubscriptionToken($marzban_list_get)]);
+    $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], "usertest", $username_ac, $datac, $randomString);
     if (!is_array($dataoutput) || empty($dataoutput['username'])) {
         $dataoutput['msg'] = json_encode($dataoutput['msg'] ?? $dataoutput ?? 'unknown error');
         sendmessage($from_id, $textbotlang['users']['usertest']['errorcreat'], $keyboard, 'html');
@@ -4219,9 +4219,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions,discount_code) VALUES (?,  ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions,discount_code,subscription_token) VALUES (?,  ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?, ?)");
     $Status = "unpaid";
-    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $priceproduct, $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $userdate['nameconfig'] ?? null, $user['affiliates'], $notifctions, $discountApplied]);
+    $stmt->execute([$from_id, $randomString, $username_ac, $date, $marzban_list_get['name_panel'], $info_product['name_product'], $priceproduct, $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $userdate['nameconfig'] ?? null, $user['affiliates'], $notifctions, $discountApplied, newNodeXSubscriptionToken($marzban_list_get)]);
     if ($priceproduct > $user['Balance'] && $user['agent'] != "n2" && intval($priceproduct) != 0) {
         $marzbandirectpay = config_get('shop', "statusdirectpabuy");
         $Balance_prim = $priceproduct - $user['Balance'];
@@ -4286,7 +4286,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             ]
         ]
     ];
-    $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], $info_product['code_product'], $username_ac, $datac);
+    $dataoutput = $ManagePanel->createUser($marzban_list_get['name_panel'], $info_product['code_product'], $username_ac, $datac, $randomString);
     if (!isset($dataoutput['username']) || $dataoutput['username'] === null || $dataoutput['username'] === '') {
         $errorMessage = $dataoutput['msg'] ?? 'unknown error';
         if (is_array($errorMessage) || is_object($errorMessage)) {
@@ -4882,9 +4882,13 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             step('home', $from_id);
             return;
         }
-        $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,notifctions,subscription_token) VALUES (?, ?, ?, ?, ?, ?, ?,?,?,?,?, ?)");
         $Status = "active";
-        $stmt->execute([$from_id, $randomString, $username_acc, $date, $user['Processing_value'], $info_product['name_product'], $single_price, $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $notifctions]);
+        $subscriptionToken = newNodeXSubscriptionToken($marzban_list_get);
+        $stmt->execute([$from_id, $randomString, $username_acc, $date, $user['Processing_value'], $info_product['name_product'], $single_price, $info_product['Volume_constraint'], $info_product['Service_time'], $Status, $notifctions, $subscriptionToken]);
+        if ($subscriptionToken !== null && $marzban_list_get['subvip'] === 'onsubvip') {
+            $dataoutput['subscription_url'] = nodeXSubscriptionUrl(['subscription_token' => $subscriptionToken]);
+        }
         $config = "";
         $output_config_link = $marzban_list_get['sublink'] == "onsublink" ? $dataoutput['subscription_url'] : "";
         if ($marzban_list_get['config'] == "onconfig") {

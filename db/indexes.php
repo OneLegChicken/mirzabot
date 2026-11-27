@@ -1,6 +1,7 @@
 <?php
 
 return [
+    ['invoice', 'uniq_invoice_subscription_token', '`subscription_token`', true],
     ['invoice', 'idx_invoice_id_user', '`id_user`(100)'],
     ['invoice', 'idx_invoice_username', '`username`(150)'],
     ['invoice', 'idx_invoice_status', '`Status`(100)'],

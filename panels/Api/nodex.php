@@ -1,5 +1,24 @@
 <?php
 
+function newNodeXSubscriptionToken(array $panel): ?string
+{
+    return isNodeXPanel($panel) ? bin2hex(random_bytes(16)) : null;
+}
+
+function isNodeXPanel(array $panel): bool
+{
+    return in_array($panel['type'] ?? '', ['nodex', 'guard', 'solidlayer'], true);
+}
+
+function nodeXSubscriptionUrl(array $invoice): string
+{
+    global $domainhosts;
+
+    $token = $invoice['subscription_token'] ?? null;
+    $key = $token === null ? $invoice['id_invoice'] : 'nx_' . $token;
+    return "https://{$domainhosts}/sub/{$key}";
+}
+
 function request_nodex($location, $method, $path, $body = null)
 {
     $panel = select("marzban_panel", "*", "name_panel", $location, "select");

@@ -5177,7 +5177,7 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
         'volume' => false,
         'time' => false,
     ));
-    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username, time_sell, Service_location, name_product, price_product, Volume, Service_time, Status,notifctions) VALUES (:id_user, :id_invoice, :username, :time_sell, :Service_location, :name_product, :price_product, :Volume, :Service_time, :Status,:notifctions)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username, time_sell, Service_location, name_product, price_product, Volume, Service_time, Status,notifctions,subscription_token) VALUES (:id_user, :id_invoice, :username, :time_sell, :Service_location, :name_product, :price_product, :Volume, :Service_time, :Status,:notifctions,:subscription_token)");
     $Status = "active";
     $stmt->bindParam(':id_user', $user['Processing_value'], PDO::PARAM_STR);
     $stmt->bindParam(':id_invoice', $randomString, PDO::PARAM_STR);
@@ -5190,7 +5190,12 @@ if ($datain == "settimecornremove" && $adminrulecheck['rule'] == "administrator"
     $stmt->bindParam(':Service_time', $info_product['Service_time'], PDO::PARAM_STR);
     $stmt->bindParam(':Status', $Status, PDO::PARAM_STR);
     $stmt->bindParam(':notifctions', $notifctions, PDO::PARAM_STR);
+    $subscriptionToken = newNodeXSubscriptionToken($marzban_list_get);
+    $stmt->bindValue(':subscription_token', $subscriptionToken, $subscriptionToken === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $stmt->execute();
+    if ($subscriptionToken !== null && $marzban_list_get['subvip'] === 'onsubvip') {
+        $DataUserOut['subscription_url'] = nodeXSubscriptionUrl(['subscription_token' => $subscriptionToken]);
+    }
     $output_config_link = $marzban_list_get['sublink'] == "onsublink" ? $DataUserOut['subscription_url'] : "";
     $config = "";
     if ($marzban_list_get['config'] == "onconfig" && is_array($DataUserOut['configs'])) {

@@ -210,7 +210,7 @@ function mini_service(array $data, string $method): void
             ]);
             return;
         }
-        $DataUserOut = $ManagePanel->DataUser($invoice['Service_location'], $invoice['username']);
+        $DataUserOut = $ManagePanel->DataUser($invoice['Service_location'], $invoice['username'], $invoice);
         if (!is_array($DataUserOut) || !array_key_exists('data_limit', $DataUserOut) || !array_key_exists('used_traffic', $DataUserOut)) {
             http_response_code(502);
             echo json_encode([
@@ -1009,11 +1009,11 @@ function mini_purchase(array $data, string $method): void
             'volume' => false,
             'time' => false,
         ));
-        $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT IGNORE INTO invoice (id_user, id_invoice, username,time_sell, Service_location, name_product, price_product, Volume, Service_time,Status,note,refral,notifctions,subscription_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?, ?)");
         $Status = "active";
         $date = time();
         $custom_note = isset($data['custom_note']) && strlen(strval($data['custom_note'])) > 1 ? $data['custom_note'] : null;
-        $stmt->execute([$user_info['id'], $randomString, $username_ac, $date, $panel['name_panel'], $product['name_product'], $price_product, $product['Volume_constraint'], $product['Service_time'], $Status, $custom_note, $user_info['affiliates'], $notifctions]);
+        $stmt->execute([$user_info['id'], $randomString, $username_ac, $date, $panel['name_panel'], $product['name_product'], $price_product, $product['Volume_constraint'], $product['Service_time'], $Status, $custom_note, $user_info['affiliates'], $notifctions, newNodeXSubscriptionToken($panel)]);
         $datetimestep = strtotime("+" . $product['Service_time'] . "days");
         if ($product['Service_time'] == 0) {
             $datetimestep = 0;
@@ -1027,7 +1027,7 @@ function mini_purchase(array $data, string $method): void
             'username' => $user_info['username'],
             'type' => 'buy'
         );
-        $dataoutput = $ManagePanel->createUser($panel['name_panel'], $product['code_product'], $username_ac, $datac);
+        $dataoutput = $ManagePanel->createUser($panel['name_panel'], $product['code_product'], $username_ac, $datac, $randomString);
         if (!is_array($dataoutput) || ($dataoutput['username'] ?? null) == null) {
             $refundOnFailure();
 

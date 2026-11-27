@@ -8,7 +8,6 @@ class NodeXPanelDriver extends BasePanelDriver
         $product = $vars['Get_Data_Product'];
         $username = $vars['usernameC'];
         $invoice = $vars['invoice'];
-        $domain = $vars['domainhosts'];
         $request = array(
             'username' => $username,
             'telegram_id' => (string) ($vars['Data_Config']['from_id'] ?? ''),
@@ -27,7 +26,7 @@ class NodeXPanelDriver extends BasePanelDriver
         return array(
             'status' => 'successful',
             'username' => $user['username'],
-            'subscription_url' => $invoice != false ? "https://$domain/sub/" . $invoice['id_invoice'] : $subscriptionUrl,
+            'subscription_url' => $invoice ? nodeXSubscriptionUrl($invoice) : $subscriptionUrl,
             'configs' => nodex_links($username, $panel['name_panel'])
         );
     }
@@ -43,7 +42,6 @@ class NodeXPanelDriver extends BasePanelDriver
         $user = $response['user'];
         $expiry = !empty($user['limit_expire']) ? (int) $user['limit_expire'] : (!empty($user['expired_at']) ? strtotime($user['expired_at']) : 0);
         $invoice = $vars['invoice'];
-        $domain = $vars['domainhosts'];
         return array(
             'status' => status_nodex($user),
             'username' => $user['username'],
@@ -52,7 +50,7 @@ class NodeXPanelDriver extends BasePanelDriver
             'online_at' => $user['last_online_at'] ?? null,
             'used_traffic' => (int) ($user['total_usage'] ?? 0),
             'links' => nodex_links($username, $panel['name_panel']),
-            'subscription_url' => $invoice != false ? "https://$domain/sub/" . $invoice['id_invoice'] : ($user['subscription_link'] ?? ''),
+            'subscription_url' => $invoice ? nodeXSubscriptionUrl($invoice) : ($user['subscription_link'] ?? ''),
             'sub_updated_at' => $user['updated_at'] ?? null,
             'sub_last_user_agent' => $user['last_client_agent'] ?? null,
             'uuid' => null,
@@ -62,17 +60,65 @@ class NodeXPanelDriver extends BasePanelDriver
 
     public function revokeSub(array $vars)
     {
+        global $pdo;
+
         $username = $vars['username'];
         $panelName = $vars['name_panel'];
-        $response = request_nodex($panelName, 'POST', '/subscriptions/revoke', array('usernames' => array($username)));
-        if (!empty($response['error']) || (int) ($response['status'] ?? 0) >= 400) {
-            return array('status' => 'Unsuccessful', 'msg' => nodex_error($response));
+        $panel = $vars['Get_Data_Panel'];
+        $invoice = $vars['invoice'] ?? null;
+        if ($invoice === null) {
+            // Older installed reseller bots do not pass the invoice to Revoke_sub().
+            $lookup = $pdo->prepare("SELECT * FROM invoice WHERE username = ? AND Service_location = ? LIMIT 1");
+            $lookup->execute([$username, $panelName]);
+            $invoice = $lookup->fetch(PDO::FETCH_ASSOC) ?: null;
         }
-        $user = $this->DataUser($panelName, $username);
+
+        try {
+            if ($invoice !== null) {
+                $token = newNodeXSubscriptionToken($panel);
+                $currentToken = $invoice['subscription_token'] ?? null;
+                $pdo->beginTransaction();
+                $rotate = $pdo->prepare("UPDATE invoice SET subscription_token = ?
+                    WHERE id_invoice = ? AND Service_location = ? AND username = ?
+                    AND (subscription_token = ? OR (subscription_token IS NULL AND ? IS NULL))");
+                $rotate->execute([$token, $invoice['id_invoice'], $panelName, $username, $currentToken, $currentToken]);
+                if ($rotate->rowCount() !== 1) {
+                    $pdo->rollBack();
+                    return ['status' => 'Unsuccessful', 'msg' => 'Subscription link has already changed.'];
+                }
+            }
+
+            $response = request_nodex($panelName, 'POST', '/subscriptions/revoke', ['usernames' => [$username]]);
+            $status = (int) ($response['status'] ?? 0);
+            if (!empty($response['error']) || $status < 200 || $status >= 300) {
+                if ($invoice !== null) {
+                    $pdo->rollBack();
+                }
+                return ['status' => 'Unsuccessful', 'msg' => nodex_error($response)];
+            }
+            if ($invoice !== null) {
+                $pdo->commit();
+                $invoice['subscription_token'] = $token;
+                clearSelectCache('invoice');
+            }
+        } catch (Throwable $e) {
+            if ($invoice !== null && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('NodeX subscription link rotation failed.');
+            return ['status' => 'Unsuccessful', 'msg' => 'Could not rotate the NodeX subscription link.'];
+        }
+
+        if ($invoice !== null && ($panel['subvip'] ?? '') === 'onsubvip') {
+            $subscriptionUrl = nodeXSubscriptionUrl($invoice);
+        } else {
+            $user = getuser_nodex($username, $panelName);
+            $subscriptionUrl = $user['user']['subscription_link'] ?? '';
+        }
         return array(
             'status' => 'successful',
             'configs' => nodex_links($username, $panelName),
-            'subscription_url' => $user['subscription_url'] ?? ''
+            'subscription_url' => $subscriptionUrl
         );
     }
 
