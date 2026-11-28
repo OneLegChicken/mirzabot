@@ -1802,8 +1802,8 @@ elseif ($datain == "systemsms") {
         return;
     }
     $claim = $isDigipay
-        ? $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid' WHERE id_order = ? AND Payment_Method = 'DigiPay credit' AND payment_Status = 'waiting'")
-        : $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid' WHERE id_order = ? AND payment_Status NOT IN ('paid', 'reject') AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
+        ? $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid', fulfillment_status = 'pending' WHERE id_order = ? AND Payment_Method = 'DigiPay credit' AND payment_Status = 'waiting'")
+        : $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid', fulfillment_status = 'pending' WHERE id_order = ? AND payment_Status NOT IN ('paid', 'reject') AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
     $claim->execute([$order_id]);
     clearSelectCache('payment_report');
     if ($claim->rowCount() === 0) {
@@ -4208,7 +4208,7 @@ elseif ($datain == "systemsms") {
         return;
     }
     update("user", "Processing_value", $id_order, "id", $from_id);
-    $claim = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid' WHERE id_order = ? AND payment_Status NOT IN ('paid', 'reject') AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
+    $claim = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid', fulfillment_status = 'pending' WHERE id_order = ? AND payment_Status NOT IN ('paid', 'reject') AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
     $claim->execute([$id_order]);
     clearSelectCache('payment_report');
     if ($claim->rowCount() === 0) {
@@ -4239,6 +4239,7 @@ elseif ($datain == "systemsms") {
     $Balance_user = select("user", "*", "id", $Payment_report['id_user'], "select");
     $balanceusers = number_format($text, 0);
     addBalance($Payment_report['id_user'], $text);
+    recordPaymentFulfillment($Payment_report, 'wallet_credited');
     $textadd = sprintf($textbotlang['users']['Balance']['addedNotice3'], $balanceusers);
     sendmessage($Payment_report['id_user'], $textadd, null, 'HTML');
     $text_report = sprintf($textbotlang['Admin']['reportgroup']['balanceManualAdd'], $Payment_report['id_user'], $Balance_user['username'], $Payment_report['price'], $text);

@@ -1225,14 +1225,40 @@ function cancelPendingGatewayOrders($id_user): void
 }
 function linkPaymentToOrder(string $order_id, $user): void
 {
+    global $pdo;
+    $orderType = 'topup';
     if ($user['step'] == "get_step_payment_buy") {
+        $orderType = 'buy';
         update("invoice", "id_payment", $order_id, "id_invoice", $user['Processing_value_one']);
         step('home', $user['id']);
     } elseif ($user['step'] == "get_step_payment_service") {
+        $order = select("service_other", "type", "id", $user['Processing_value_one'], "select");
+        $orderType = $order['type'] ?? 'service';
         update("service_other", "id_payment", $order_id, "id", $user['Processing_value_one']);
         step('home', $user['id']);
     }
+    try {
+        $pdo->prepare("UPDATE payment_report SET order_type = ? WHERE id_order = ? AND id_user = ?")
+            ->execute([$orderType, $order_id, $user['id']]);
+        clearSelectCache('payment_report');
+    } catch (PDOException $e) {
+        error_log('Could not record the order type for payment tracking.');
+    }
 }
+
+function recordPaymentFulfillment(array $payment, string $status, ?string $orderType = null): void
+{
+    global $pdo;
+    try {
+        $pdo->prepare("UPDATE payment_report SET fulfillment_status = ?, order_type = COALESCE(order_type, ?)
+            WHERE id = ? AND payment_Status = 'paid'")
+            ->execute([$status, $orderType, $payment['id']]);
+        clearSelectCache('payment_report');
+    } catch (PDOException $e) {
+        error_log('Could not record the service delivery status for payment tracking.');
+    }
+}
+
 function paymentOrder($order_id): array
 {
     return [
@@ -1243,7 +1269,7 @@ function paymentOrder($order_id): array
 function claimPaymentPaid($order_id)
 {
     global $pdo;
-    $stmt = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid' WHERE id_order = :id_order AND payment_Status <> 'paid' AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
+    $stmt = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid', fulfillment_status = 'pending' WHERE id_order = :id_order AND payment_Status <> 'paid' AND COALESCE(Payment_Method, '') <> 'DigiPay credit'");
     $stmt->bindValue(':id_order', $order_id);
     $stmt->execute();
     clearSelectCache('payment_report');
@@ -1268,6 +1294,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
     $service_order = $linkedOrder['service'];
     if (($get_invoice && $get_invoice['Status'] == "active") || (!$get_invoice && $service_order && $service_order['status'] == "paid")) {
         addBalance($Balance_id['id'], intval($Payment_report['price']));
+        recordPaymentFulfillment($Payment_report, 'wallet_credited', $get_invoice ? 'buy' : $service_order['type']);
         sendmessage($Balance_id['id'], sprintf($textbotlang['users']['Balance']['addedNotice5'], number_format(intval($Payment_report['price']))), $keyboard, 'HTML');
         return;
     }
@@ -1288,6 +1315,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
         addBalance($Balance_id['id'], $paidAmount - $orderPrice);
         if ($walletPortion > 0 && !deductBalance($Balance_id, $walletPortion)) {
             addBalance($Balance_id['id'], min($paidAmount, $orderPrice));
+            recordPaymentFulfillment($Payment_report, 'wallet_refunded', $orderType);
             if ($orderType != "buy") {
                 update("service_other", "status", "failed", "id", $service_order['id']);
                 if (!empty($serviceParams['discount_code'])) {
@@ -1340,6 +1368,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
         clearSelectCache('invoice');
         if ($claimInvoice->rowCount() === 0) {
             addBalance($Balance_id['id'], $orderPrice);
+            recordPaymentFulfillment($Payment_report, 'wallet_refunded', $orderType);
             sendmessage($Balance_id['id'], sprintf($textbotlang['users']['Balance']['addedNotice5'], number_format($orderPrice)), $keyboard, 'HTML');
             return;
         }
@@ -1348,6 +1377,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
             update("invoice", "Status", $invoiceStatusBefore, "id_invoice", $get_invoice['id_invoice']);
             $dataoutput['msg'] = json_encode($dataoutput['msg'] ?? $dataoutput ?? 'unknown error');
             addBalance($Balance_id['id'], $orderPrice);
+            recordPaymentFulfillment($Payment_report, 'wallet_refunded', $orderType);
             if (!empty($get_invoice['discount_code'])) {
                 releaseDiscountCode($get_invoice['discount_code'], $Balance_id['id']);
                 $pdo->prepare("UPDATE invoice SET discount_code = NULL WHERE id_invoice = ?")->execute([$get_invoice['id_invoice']]);
@@ -1397,6 +1427,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
             $textcreatuser = str_replace('{password}', $dataoutput['subscription_url'], $textcreatuser);
             update("invoice", "user_info", $dataoutput['subscription_url'], "id_invoice", $get_invoice['id_invoice']);
         }
+        recordPaymentFulfillment($Payment_report, 'fulfilled', $orderType);
         sendMessageService($marzban_list_get, $dataoutput['configs'], $output_config_link, $dataoutput['username'], $Shoppinginfo, $textcreatuser, $get_invoice['id_invoice'], $get_invoice['id_user'], $image, wireguard: $dataoutput['wireguard'] ?? []);
         if (!empty($get_invoice['discount_code'])) {
             $text_report = sprintf($textbotlang['Admin']['reportgroup']['discountCodeUsed'], $Balance_id['username'], $Balance_id['id'], $get_invoice['discount_code']);
@@ -1535,6 +1566,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
             update("service_other", "output", json_encode($extend), "id", $service_order['id']);
             update("service_other", "status", "failed", "id", $service_order['id']);
             addBalance($Balance_id['id'], $orderPrice);
+            recordPaymentFulfillment($Payment_report, 'wallet_refunded', $orderType);
             if (!empty($serviceParams['discount_code'])) {
                 releaseDiscountCode($serviceParams['discount_code'], $Balance_id['id']);
             }
@@ -1556,6 +1588,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
 
         update("service_other", "output", json_encode($extend), "id", $service_order['id']);
         update("service_other", "status", "paid", "id", $service_order['id']);
+        recordPaymentFulfillment($Payment_report, 'fulfilled', $orderType);
         if (!empty($serviceParams['discount_code'])) {
             $text_report = sprintf($textbotlang['Admin']['reportgroup']['discountCodeUsedFn'], $Balance_id['username'], $Balance_id['id'], $serviceParams['discount_code']);
             if (strlen($setting['Channel_Report']) > 0) {
@@ -1621,6 +1654,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
             update("service_other", "output", json_encode($extra_volume), "id", $service_order['id']);
             update("service_other", "status", "failed", "id", $service_order['id']);
             addBalance($Balance_id['id'], $orderPrice);
+            recordPaymentFulfillment($Payment_report, 'wallet_refunded', $orderType);
             sendmessage($Balance_id['id'], sprintf($textbotlang['users']['Balance']['addedNotice5'], number_format($orderPrice)), null, 'HTML');
             $extra_volume['msg'] = json_encode($extra_volume['msg']);
             $textreports = sprintf($textbotlang['Admin']['reportgroup']['errorExtraVolumeFn'], $marzban_list_get['name_panel'], $nameloc['username'], $extra_volume['msg']);
@@ -1637,6 +1671,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
         }
         update("service_other", "output", json_encode($extra_volume), "id", $service_order['id']);
         update("service_other", "status", "paid", "id", $service_order['id']);
+        recordPaymentFulfillment($Payment_report, 'fulfilled', $orderType);
         $keyboardextrafnished = json_encode([
             'inline_keyboard' => [
                 [
@@ -1678,6 +1713,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
             update("service_other", "output", json_encode($extra_time), "id", $service_order['id']);
             update("service_other", "status", "failed", "id", $service_order['id']);
             addBalance($Balance_id['id'], $orderPrice);
+            recordPaymentFulfillment($Payment_report, 'wallet_refunded', $orderType);
             sendmessage($Balance_id['id'], sprintf($textbotlang['users']['Balance']['addedNotice5'], number_format($orderPrice)), null, 'HTML');
             $extra_time['msg'] = json_encode($extra_time['msg']);
             $textreports = sprintf($textbotlang['Admin']['reportgroup']['errorExtraTimeFn'], $marzban_list_get['name_panel'], $nameloc['username'], $extra_time['msg']);
@@ -1694,6 +1730,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
         }
         update("service_other", "output", json_encode($extra_time), "id", $service_order['id']);
         update("service_other", "status", "paid", "id", $service_order['id']);
+        recordPaymentFulfillment($Payment_report, 'fulfilled', $orderType);
         $keyboardextrafnished = json_encode([
             'inline_keyboard' => [
                 [
@@ -1727,6 +1764,7 @@ function DirectPayment($order_id, $image = 'images.jpg')
         }
     } else {
         addBalance($Payment_report['id_user'], intval($Payment_report['price']));
+        recordPaymentFulfillment($Payment_report, 'fulfilled', $orderType);
         update("payment_report", "payment_Status", "paid", "id_order", $Payment_report['id_order']);
         $Payment_report['price'] = number_format($Payment_report['price'], 0);
         $format_price_cart = $Payment_report['price'];

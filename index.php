@@ -8,6 +8,7 @@ require_once 'config.php';
 require_once 'botapi.php';
 require_once 'jdf.php';
 require_once 'function.php';
+require_once __DIR__ . '/customer_orders.php';
 mirzaEnsureInstallerRemoved();
 require_once 'keyboard.php';
 require_once 'vendor/autoload.php';
@@ -482,6 +483,16 @@ if ($user['joinchannel'] != "active") {
             return;
         }
     }
+}
+if (preg_match('/\A(trackorders|trackpay):([1-9][0-9]{0,9})\z/', $datain, $tracking)) {
+    telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
+    if ($Chat_type !== 'private') {
+        return;
+    }
+    $paymentId = $tracking[1] === 'trackpay' ? (int) $tracking[2] : null;
+    $page = $paymentId === null ? (int) $tracking[2] : 1;
+    showCustomerOrders($pdo, (string) $from_id, (int) $message_id, $textbotlang, $page, $paymentId);
+    return;
 }
 if ($text == "/start" || $datain == "start" || $text == "start") {
     sendmessage($from_id, $textbotlang['users']['text_start'], $keyboard, "html");
@@ -2050,7 +2061,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     if ($cashbackextend) {
         sendmessage($from_id, sprintf($textbotlang['users']['extend']['giftCharged'], $cashbackextend), null, 'HTML');
     }
-    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output,status) VALUES (?, ?, ?, ?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price,output,status,payable_amount) VALUES (?, ?, ?, ?,?,?,?,?,?)");
     $dateacc = date('Y/m/d H:i:s');
     $value = json_encode(array(
         "volumebuy" => $prodcut['Volume_constraint'],
@@ -2063,7 +2074,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     $type = "extend_user";
     $status = "paid";
     $extend_json = json_encode($extend);
-    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend_json, $status]);
+    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $prodcut['price_product'], $extend_json, $status, $pricelastextend]);
     update("invoice", "Status", "active", "id_invoice", $id_invoice);
     if (intval($setting['scorestatus']) == 1 and !in_array($from_id, $admin_ids)) {
         sendmessage($from_id, $textbotlang['users']['affiliates']['pointsEarned2Alt'], null, 'html');
@@ -3114,6 +3125,12 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         return;
     }
     savedata("clear", "transfer_invoice", null);
+    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price) VALUES (?, ?, ?, ?,?,?)");
+    $value = $transferTo;
+    $dateacc = date('Y/m/d H:i:s');
+    $type = "transfertouser";
+    $price = "0";
+    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $price]);
     update("invoice", "id_user", $transferTo, "id_invoice", $id_invoice);
     $bakinfos = json_encode([
         'inline_keyboard' => [
@@ -3125,12 +3142,6 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     Editmessagetext($from_id, $message_id, $textbotlang['users']['transfer']['confirmed'], $bakinfos);
     $texttransfer = strtr($textbotlang['users']['transfer']['receivedNotice'], ['{service_username}' => $nameloc['username'], '{from_id}' => $from_id]);
     sendmessage($transferTo, $texttransfer, $keyboard, 'HTML');
-    $stmt = $pdo->prepare("INSERT IGNORE INTO service_other (id_user, username,value,type,time,price) VALUES (?, ?, ?, ?,?,?)");
-    $value = $transferTo;
-    $dateacc = date('Y/m/d H:i:s');
-    $type = "transfertouser";
-    $price = "0";
-    $stmt->execute([$from_id, $nameloc['username'], $value, $type, $dateacc, $price]);
 } elseif ($user['step'] == "createusertest" || preg_match('/locationtest_(.*)/', $datain, $dataget) || $text == $textbotlang['textbot']['userTest'] || $datain == "usertestbtn" || $text == "usertest" || $text == "/free") {
     if (!check_active_btn($setting['keyboardmain'], "text_usertest")) {
         sendmessage($from_id, $textbotlang['users']['usertest']['unavailable'], null, 'HTML');
@@ -5881,7 +5892,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     $format_balance = number_format($user['Balance'], 0);
     step('home', $from_id);
     $PaymentReport = select("payment_report", "*", "id_order", $user['Processing_value'], "select");
-    if ($PaymentReport == false || $PaymentReport['Payment_Method'] === 'DigiPay credit') {
+    if (!$PaymentReport || $PaymentReport['Payment_Method'] !== 'arze digital offline'
+        || !saveCustomerPaymentReceipt($pdo, $PaymentReport, (string) $from_id, "$text $caption")) {
         sendmessage($from_id, $textbotlang['users']['Balance']['restartPurchaseOrPay'], $keyboard, 'HTML');
         return;
     }
@@ -5973,15 +5985,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         }
         sendmessage($id_admin, $textsendrasid, $Confirm_pay, 'HTML');
     }
-    if ($get_invoice) {
-        sendmessage($from_id, $textbotlang['users']['Balance']['sendReceiptAndConfig'], $keyboard, 'HTML');
-    } else {
-        sendmessage($from_id, $textbotlang['users']['Balance']['sendReceipt'], $keyboard, 'HTML');
-    }
-    update("payment_report", "payment_Status", "waiting", "id_order", $PaymentReport['id_order']);
-    update("payment_report", "dec_not_confirmed", "$text $caption", "id_order", $PaymentReport['id_order']);
-    $dateacc = date('Y/m/d H:i:s');
-    update("payment_report", "at_updated", $dateacc, "id_order", $PaymentReport['id_order']);
+    $receiptMessage = $get_invoice ? 'sendReceiptAndConfig' : 'sendReceipt';
+    sendmessage($from_id, $textbotlang['users']['Balance'][$receiptMessage],
+        customerOrderReceiptKeyboard($textbotlang['users']['orderTracking'], (int) $PaymentReport['id']), 'HTML');
 } elseif ($user['step'] == "cart_to_cart_user") {
     $format_balance = number_format($user['Balance'], 0);
     if (!$photo or isset($update['message']['media_group_id'])) {
@@ -5990,20 +5996,12 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     }
     step('home', $from_id);
     $PaymentReport = select("payment_report", "*", "id_order", $user['Processing_value']);
-    if ($PaymentReport == false) {
-        sendmessage($from_id, $textbotlang['users']['infoFetchErrorRestart'], $keyboard, 'HTML');
+    if (!$PaymentReport || !in_array($PaymentReport['Payment_Method'], ['cart to cart', 'DigiPay credit'], true)
+        || !saveCustomerPaymentReceipt($pdo, $PaymentReport, (string) $from_id)) {
+        sendmessage($from_id, $textbotlang['users']['orderTracking']['receiptUnavailable'], $keyboard, 'HTML');
         return;
     }
     $isDigipay = $PaymentReport['Payment_Method'] === 'DigiPay credit';
-    if ($isDigipay) {
-        $receipt = $pdo->prepare("UPDATE payment_report SET payment_Status = 'waiting', at_updated = ? WHERE id_order = ? AND id_user = ? AND Payment_Method = 'DigiPay credit' AND payment_Status IN ('Unpaid', 'waiting')");
-        $receipt->execute([date('Y/m/d H:i:s'), $PaymentReport['id_order'], $from_id]);
-        if ($receipt->rowCount() !== 1) {
-            sendmessage($from_id, 'این درخواست پرداخت معتبر یا فعال نیست، یا رسید آن همین حالا ثبت شده است.', $keyboard, 'HTML');
-            return;
-        }
-        clearSelectCache('payment_report');
-    }
     $Confirm_pay = json_encode([
         'inline_keyboard' => [
             [
@@ -6024,7 +6022,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     if ($get_invoice) {
         $textdiscount = "";
         $textsendrasid = sprintf($textbotlang['Admin']['reportgroup']['newPaymentService2'], $get_invoice['username'], $get_invoice['name_product'], $get_invoice['Volume'], $get_invoice['Service_time'], $first_name, $from_id, $from_id, $format_balance, $PaymentReport['id_order'], $username, $format_price_cart);
-        sendmessage($from_id, $textbotlang['users']['Balance']['sendReceiptAndConfig'], $keyboard, 'HTML');
+        $receiptMessage = 'sendReceiptAndConfig';
     } elseif ($service_order && $service_order['type'] == "extend_user") {
         $usernamepanel = $service_order['username'];
         $service_other = $service_value;
@@ -6066,21 +6064,21 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             ]
         ]);
         $textsendrasid = sprintf($textbotlang['Admin']['reportgroup']['newPaymentRenew2'], $usernamepanel, $prodcut['name_product'], $first_name, $from_id, $from_id, $format_balance, $PaymentReport['id_order'], $username, $format_price_cart);
-        sendmessage($from_id, $textbotlang['users']['Balance']['receiptSentRenew'], $keyboard, 'HTML');
+        $receiptMessage = 'receiptSentRenew';
     } elseif ($service_order && $service_order['type'] == "extra_user") {
         $usernamepanel = $service_order['username'];
         $volumes = $service_value['volume_value'];
         $textsendrasid = sprintf($textbotlang['Admin']['reportgroup']['newPaymentExtraVolume2'], $usernamepanel, $volumes, $first_name, $from_id, $from_id, $format_balance, $PaymentReport['id_order'], $username, $format_price_cart);
-        sendmessage($from_id, $textbotlang['users']['Balance']['receiptSentExtraVolume'], $keyboard, 'HTML');
+        $receiptMessage = 'receiptSentExtraVolume';
     } elseif ($service_order && $service_order['type'] == "extra_time_user") {
         $usernamepanel = $service_order['username'];
         $time = $service_value['day'];
         $textsendrasid = sprintf($textbotlang['Admin']['reportgroup']['newPaymentExtraTime2'], $usernamepanel, $time, $first_name, $from_id, $from_id, $format_balance, $PaymentReport['id_order'], $username, $format_price_cart);
-        sendmessage($from_id, $textbotlang['users']['Balance']['receiptSentExtraTime'], $keyboard, 'HTML');
+        $receiptMessage = 'receiptSentExtraTime';
     } else {
 
         $textsendrasid = sprintf($textbotlang['Admin']['reportgroup']['newPaymentBalance2'], $first_name, $from_id, $from_id, $format_balance, $PaymentReport['id_order'], $username, $format_price_cart);
-        sendmessage($from_id, $textbotlang['users']['Balance']['sendReceipt'], $keyboard, 'HTML');
+        $receiptMessage = 'sendReceipt';
     }
     if ($isDigipay) {
         $grossAmount = (int) ($PaymentReport['gross_amount'] ?? 0);
@@ -6103,10 +6101,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         ]);
         sendmessage($id_admin, $textsendrasid, $Confirm_pay, 'HTML');
     }
-    if (!$isDigipay) {
-        update("payment_report", "payment_Status", "waiting", "id_order", $PaymentReport['id_order']);
-        update("payment_report", "at_updated", date('Y/m/d H:i:s'), "id_order", $PaymentReport['id_order']);
-    }
+    sendmessage($from_id, $textbotlang['users']['Balance'][$receiptMessage],
+        customerOrderReceiptKeyboard($textbotlang['users']['orderTracking'], (int) $PaymentReport['id']), 'HTML');
 } elseif ($datain == "Discount") {
     $bakinfos = json_encode([
         'inline_keyboard' => [

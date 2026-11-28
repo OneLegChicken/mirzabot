@@ -40,7 +40,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     if ($Payment_report['payment_Status'] == "paid") {
         continue;
     }
-    $stmtPaid = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid', dec_not_confirmed = ? WHERE id_order = ? AND payment_Status = 'waiting'");
+    $stmtPaid = $pdo->prepare("UPDATE payment_report SET payment_Status = 'paid', fulfillment_status = 'pending', dec_not_confirmed = ? WHERE id_order = ? AND payment_Status = 'waiting'");
     $stmtPaid->execute([$textbotlang['common']['labels']['autoConfirmedByBot'], $Payment_report['id_order']]);
     clearSelectCache('payment_report');
     if ($stmtPaid->rowCount() === 0)

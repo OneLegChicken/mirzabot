@@ -16,7 +16,9 @@ return [
         message_id INT NULL,
         id_invoice varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
         fee_amount BIGINT NOT NULL DEFAULT 0,
-        gross_amount BIGINT NOT NULL DEFAULT 0
+        gross_amount BIGINT NOT NULL DEFAULT 0,
+        order_type VARCHAR(20) NULL,
+        fulfillment_status VARCHAR(16) NULL
         SQL,
     'ensureUtf8mb4' => true,
     'columns' => [
@@ -27,5 +29,7 @@ return [
         ['id_invoice', 'none', 'VARCHAR(400)'],
         ['fee_amount', '0', 'BIGINT NOT NULL DEFAULT 0'],
         ['gross_amount', '0', 'BIGINT NOT NULL DEFAULT 0'],
+        ['order_type', null, 'VARCHAR(20) NULL'],
+        ['fulfillment_status', null, 'VARCHAR(16) NULL'],
     ],
 ];
