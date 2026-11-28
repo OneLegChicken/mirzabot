@@ -228,35 +228,12 @@ mirza update --channel release
 
 ---
 
-## 💎 Free vs. Pro
-
-| | Free | Pro |
-|---|:---:|:---:|
-| Automated sales and config creation | ✅ | ✅ |
-| Trial accounts, wallet and service management | ✅ | ✅ |
-| All supported panels and payment gateways | ✅ | ✅ |
-| Advanced customization and analytics | — | ✅ |
-| Extra management modules | — | ✅ |
-
-📌 **How to buy Pro:** [see on Telegram](https://t.me/mirzaperimium/4)
-
----
 
 ## 🌍 Languages
 
 The bot and the web panel are fully translated into:
 
 🇮🇷 Persian (فارسی) · 🇬🇧 English · 🇷🇺 Russian (Русский) · 🇨🇳 Chinese (中文)
-
----
-
-## 💵 Support the Project
-
-If Mirza Bot helps your business, you can support its development with a crypto donation:
-
-<a href="https://nowpayments.io/donation/mahdi">
-  <img src="https://img.shields.io/badge/Donate-NowPayments-1A1A2E?style=for-the-badge&logo=bitcoin&logoColor=white" alt="Donate"/>
-</a>
 
 ---
 
