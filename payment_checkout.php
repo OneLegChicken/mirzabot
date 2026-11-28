@@ -47,9 +47,8 @@ function paymentCheckoutView(array $labels, string $intro, string $keyboard, flo
             continue;
         }
         $quote = digipayCheckoutQuote((int) $remaining);
-        $text .= "\n\n" . digipayCheckoutAmount($labels, $quote);
         if (!$quote['eligible']) {
-            $text .= "\n" . sprintf($labels['digipayRange'], number_format($quote['minimum']), number_format($quote['maximum']));
+            $text .= "\n\n" . sprintf($labels['digipayRange'], number_format($quote['minimum']), number_format($quote['maximum']));
             unset($markup['inline_keyboard'][$index]);
             $markup['inline_keyboard'] = array_values($markup['inline_keyboard']);
         }
