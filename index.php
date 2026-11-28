@@ -1024,9 +1024,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 'text' => $textbotlang['users']['extend']['title'],
                 'callback_data' => "extend_"
             ),
-            'changelink' => array(
-                'text' => $textbotlang['users']['changeLink']['btnTitle'],
-                'callback_data' => "changelink_"
+            'Extra_time' => array(
+                'text' => $textbotlang['users']['extraTime']['title'],
+                'callback_data' => "Extra_time_"
             ),
             'removeservice' => array(
                 'text' => $textbotlang['users']['status']['removeservice'],
@@ -1040,9 +1040,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 'text' => $textbotlang['users']['extraVolume']['sellextra'],
                 'callback_data' => "Extra_volume_"
             ),
-            'Extra_time' => array(
-                'text' => $textbotlang['users']['extraTime']['title'],
-                'callback_data' => "Extra_time_"
+            'changelink' => array(
+                'text' => $textbotlang['users']['changeLink']['btnTitle'],
+                'callback_data' => "changelink_"
             ),
             'changestatus' => array(
                 'text' => $namestatus,
