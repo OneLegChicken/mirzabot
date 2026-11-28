@@ -39,6 +39,7 @@
 ## 📚 Contents
 
 - [Overview](#-overview)
+- [Changes in This Fork](#changes-in-this-fork)
 - [Documentation](#-documentation)
 - [Supported Panels](#-supported-panels)
 - [Payment Gateways](#-payment-gateways)
@@ -58,7 +59,31 @@
 
 It connects to your panels, creates configs automatically, accepts many payment methods, and comes with a **Telegram Mini App** for customers and a **web admin panel** for you.
 
-This is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of the upstream Mirza Bot project. It includes NodeX panel integration.
+This is the [OneLegChicken fork](https://github.com/OneLegChicken/mirzabot) of Mirza Bot, with NodeX support, DigiPay credit payments, and customer order tracking.
+
+---
+
+## Changes in This Fork
+
+### Customer experience
+
+- **My Services** has Active, Needs Renewal, and Archived filters. Opening a service and going back keeps the current filter and page. Customers can archive services that ran out of time or data and restore them to their list. The panel account and payment history are preserved.
+- **Service details** group extra time and extra data on the same row. The Mini App uses the last saved status and expiry in its service list and checks the panel live when a customer opens a service.
+- **Order tracking** is available under **کیف پول → پیگیری سفارش‌ها** and from receipt confirmations. Customers can see the tracking code, amount, and progress for purchases, renewals, and wallet top-ups. Receipt review, payment approval, and delivery are shown as separate steps.
+
+### Payments and administration
+
+- **DigiPay credit** uses a merchant QR code and manual receipt review. Admins can set the payment range, percentage fee, and instructions from the bot. Checkout shows the wallet contribution and remaining balance. The DigiPay fee and final total appear after the customer selects DigiPay. If the total falls outside the configured range, checkout explains the limit before selection.
+- **Receipt queue** shows the oldest pending card-to-card and DigiPay receipts first, with gateway, amount, order type, and waiting time. Admins can reopen newly submitted receipt photos and preview how many receipts a bulk rejection would affect. Rejected payments remain visible in order tracking.
+- **Payment safeguards** notify the owner when the DigiPay QR image changes. DigiPay approval requires the administrator to verify the transaction in the merchant account.
+- **Reports** keep archived purchases in the web dashboard’s historical sales totals and charts.
+
+### NodeX
+
+- **Panel integration** supports creating, renewing, and managing subscriptions with a NodeX API key. NodeX and WG-Mate share a row in the **Add Panel** picker.
+- **Usage reports** show the last 24 hours of traffic, average daily use over the last seven days, and an estimate of how long the remaining data will last. Admins can also see panel-wide usage, traffic sold, and the nodes with the highest traffic.
+- **Subscription links** use per-service tokens for new bot-hosted NodeX links. Existing links remain valid until the customer chooses **تغییر لینک** to rotate the link.
+- **Trials** are removed from Mirza’s database 72 hours after the bot marks them ended. The NodeX account stays in the panel.
 
 ---
 
@@ -98,6 +123,7 @@ The full manual is at **[mirzabot.com/docs](https://mirzabot.com/docs/)**: 61 pa
 | Gateway | Type |
 |---------|------|
 | Card-to-card | Manual (receipt + admin approval) |
+| DigiPay credit | Merchant QR, receipt upload, and manual verification |
 | Variza | Automated card-to-card |
 | AbanGateway | Automated card-to-card |
 | Zarinpal | Online gateway |
@@ -156,6 +182,8 @@ Run this as **root**:
 ```bash
 curl -fL -o install.sh https://raw.githubusercontent.com/OneLegChicken/mirzabot/main/install.sh && bash install.sh
 ```
+
+To install or update from this fork’s `main`, select **[3] Feature (main)** when the installer asks for a version.
 
 After the first install, open the same menu any time with `mirza`:
 
