@@ -93,9 +93,10 @@ class ServiceMonitor
             return false;
 
         // Get username data from panel
-        $userData = $this->Panel->DataUser($invoice['Service_location'], $username);
+        $userData = $this->Panel->DataUser($invoice['Service_location'], $username, $invoice);
         if (!$userData || $userData['status'] == "Unsuccessful")
             return;
+        rememberInvoicePanelStatus($invoice, $userData['status']);
         return [
             'invoice' => $invoice,
             'panel' => $panelInfo,

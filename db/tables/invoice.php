@@ -23,6 +23,7 @@ return [
         test_ended_at varchar(100) NULL,
         notifctions TEXT NOT NULL,
         Status varchar(200) NULL,
+        panel_status VARCHAR(16) NULL,
         id_payment varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
         payable_amount varchar(20) NULL,
         discount_code varchar(200) NULL
@@ -39,6 +40,7 @@ return [
         ['test_ended_at', null, 'VARCHAR(100)'],
         ['notifctions', $notifications, 'TEXT NOT NULL'],
         ['Status', null, 'VARCHAR(100)'],
+        ['panel_status', null, 'VARCHAR(16) NULL'],
         ['id_payment', null, 'VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL'],
         ['payable_amount', null, 'VARCHAR(20) NULL'],
         ['discount_code', null, 'VARCHAR(200) NULL'],

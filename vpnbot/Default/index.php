@@ -1413,8 +1413,8 @@ $textonebuy
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ RemainingVolume ]--------------#
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : "نامحدود";
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : "نامحدود";
     #---------------[ used_traffic ]--------------#
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
@@ -1454,14 +1454,7 @@ $textonebuy
         $lastupdate = jdate('Y/m/d H:i:s', $dateTime->getTimestamp());
     }
     #--------------[ Percent ]---------------#
-    if ($DataUserOut['data_limit'] != null && $DataUserOut['used_traffic'] != null) {
-        $Percent = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) * 100 / $DataUserOut['data_limit'];
-    } else {
-        $Percent = "100";
-    }
-    if ($Percent < 0)
-        $Percent = -($Percent);
-    $Percent = round($Percent, 2);
+    $Percent = $trafficRemaining['percent'];
     $keyboardsetting = ['inline_keyboard' => []];
     $keyboarddateservies = array(
         'extend' => array(

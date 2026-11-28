@@ -4510,8 +4510,8 @@ elseif ($datain == "systemsms") {
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ RemainingVolume ]--------------#
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : $textbotlang['users']['status']['unlimited'];
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ used_traffic ]--------------#
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
@@ -4525,17 +4525,7 @@ elseif ($datain == "systemsms") {
         $dateTime->setTimezone(new DateTimeZone('Asia/Tehran'));
         $lastupdate = jdate('Y/m/d H:i:s', $dateTime->getTimestamp());
     }
-    $limitValue = isset($DataUserOut['data_limit']) ? (float) $DataUserOut['data_limit'] : 0;
-    $usedTrafficValue = isset($DataUserOut['used_traffic']) ? (float) $DataUserOut['used_traffic'] : 0;
-    if ($limitValue > 0) {
-        $Percent = (($limitValue - $usedTrafficValue) * 100) / $limitValue;
-    } else {
-        $Percent = 100;
-    }
-    if ($Percent < 0) {
-        $Percent = -$Percent;
-    }
-    $Percent = round($Percent, 2);
+    $Percent = $trafficRemaining['percent'];
     $text_order .= sprintf($textbotlang['Admin']['order']['serviceSummary'], $status_var, $LastTraffic, $usedTrafficGb, $RemainingVolume, $Percent, $expirationDate, $day, $DataUserOut['subscription_url'], $lastonline, $lastupdate, $DataUserOut['sub_last_user_agent']);
     $servicePanel = select("marzban_panel", "type", "name_panel", $OrderUser['Service_location'], "select");
     if (in_array($servicePanel['type'] ?? '', ["nodex", "guard", "solidlayer"], true)) {

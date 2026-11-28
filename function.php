@@ -685,7 +685,7 @@ function writeAgentBotConfig(string $path, $token): bool
     return $count === 1 && file_put_contents($path, $config, LOCK_EX) === strlen($config);
 }
 
-function serviceStatusChip($status)
+function serviceStatusChip($status, $panelStatus = null)
 {
     $chips = [
         'active' => ' 🟢',
@@ -693,8 +693,36 @@ function serviceStatusChip($status)
         'send_on_hold' => ' ⏸️',
         'end_of_time' => ' ⌛️',
         'end_of_volume' => ' 📊',
+        'expired' => ' ⌛️',
+        'limited' => ' 📊',
+        'on_hold' => ' ⏸️',
+        'disabled' => ' 🔴',
+        'deactivev' => ' 🔴',
     ];
-    return $chips[$status] ?? '';
+    return $chips[$panelStatus ?? $status] ?? '';
+}
+
+function rememberInvoicePanelStatus(array $invoice, $status): void
+{
+    global $pdo;
+    if (!array_key_exists('panel_status', $invoice)
+        || $invoice['panel_status'] === $status
+        || !in_array($status, ['active', 'expired', 'limited', 'on_hold', 'disabled', 'deactivev'], true)) {
+        return;
+    }
+
+    $previous = $invoice['panel_status'];
+    try {
+        $statement = $pdo->prepare("UPDATE invoice SET panel_status = ?
+            WHERE id_invoice = ? AND Service_location = ? AND username = ?
+              AND (panel_status = ? OR (panel_status IS NULL AND ? IS NULL))");
+        $statement->execute([$status, $invoice['id_invoice'], $invoice['Service_location'], $invoice['username'], $previous, $previous]);
+        if ($statement->rowCount() > 0) {
+            clearSelectCache('invoice');
+        }
+    } catch (PDOException $e) {
+        error_log('Could not save the last known service status.');
+    }
 }
 
 function buildAccountSummary($userId)
@@ -1016,6 +1044,18 @@ function formatBytes($bytes, $precision = 2): string
         $textbotlang['common']['units']['terabyte'],
     ];
     return round(pow(1024, $base - $power), $precision) . ' ' . $suffixes[$power];
+}
+
+function serviceRemainingTraffic(array $service): array
+{
+    $limit = (float) ($service['data_limit'] ?? 0);
+    if ($limit <= 0) {
+        return ['bytes' => null, 'percent' => 100];
+    }
+
+    $used = max(0, (float) ($service['used_traffic'] ?? 0));
+    $remaining = max(0, $limit - $used);
+    return ['bytes' => $remaining, 'percent' => round(($remaining / $limit) * 100, 2)];
 }
 function generateUsername($from_id, $Metode, $username, $randomString, $text, $namecustome, $usernamecustom)
 {

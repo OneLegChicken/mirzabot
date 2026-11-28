@@ -552,7 +552,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -561,7 +561,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -617,7 +617,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -626,7 +626,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -686,7 +686,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -695,7 +695,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "product_" . $row['id_invoice']
                 ],
             ];
@@ -774,8 +774,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ RemainingVolume ]--------------#
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : $textbotlang['common']['labels']['unlimitedShort'];
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : $textbotlang['common']['labels']['unlimitedShort'];
     #---------------[ used_traffic ]--------------#
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
@@ -886,7 +886,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                     $data = " | {$row['note']}";
                 $keyboardlists['inline_keyboard'][] = [
                     [
-                        'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                        'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                         'callback_data' => "product_" . $row['id_invoice']
                     ],
                 ];
@@ -895,7 +895,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $keyboardlists['inline_keyboard'][] = [
                     [
-                        'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                        'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                         'callback_data' => "product_" . $row['id_invoice']
                     ],
                 ];
@@ -962,6 +962,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     }
     #-------------status----------------#
     $status = $DataUserOut['status'] ?? 'Unknown';
+    rememberInvoicePanelStatus($nameloc, $status);
     $status_var = [
         'active' => $textbotlang['users']['status']['active'],
         'limited' => $textbotlang['users']['status']['limited'],
@@ -976,8 +977,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ RemainingVolume ]--------------#
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : $textbotlang['common']['labels']['unlimitedShort'];
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : $textbotlang['common']['labels']['unlimitedShort'];
     #---------------[ used_traffic ]--------------#
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
@@ -1017,14 +1018,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $lastupdate = jdate('Y/m/d H:i:s', $dateTime->getTimestamp());
     }
     #--------------[ Percent ]---------------#
-    if ($DataUserOut['data_limit'] != null && $DataUserOut['used_traffic'] != null) {
-        $Percent = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) * 100 / $DataUserOut['data_limit'];
-    } else {
-        $Percent = "100";
-    }
-    if ($Percent < 0)
-        $Percent = -($Percent);
-    $Percent = round($Percent, 2);
+    $Percent = $trafficRemaining['percent'];
     $keyboardsetting = json_encode([
         'inline_keyboard' => [
             [
@@ -2610,8 +2604,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     $expirationDate = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['users']['status']['unlimited'];
     $timeDiff = $DataUserOut['expire'] - time();
     $day = $DataUserOut['expire'] ? floor($timeDiff / 86400) . $textbotlang['users']['status']['day'] : $textbotlang['users']['status']['unlimited'];
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : $textbotlang['common']['labels']['unlimitedShort'];
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : $textbotlang['common']['labels']['unlimitedShort'];
     if ($marzban_list_get['url_panel'] == $marzban_list_get_new['url_panel']) {
         $ManagePanel->RemoveUser($nameloc['Service_location'], $nameloc['username']);
         $dataoutput = $ManagePanel->createUser($marzban_list_get_new['name_panel'], "usertest", $DataUserOut['username'], $datac);
@@ -2771,8 +2765,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ RemainingVolume ]--------------#
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : $textbotlang['common']['labels']['unlimitedShort'];
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : $textbotlang['common']['labels']['unlimitedShort'];
     #---------------[ used_traffic ]--------------#
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
@@ -2785,14 +2779,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         $dateTime->setTimezone(new DateTimeZone('Asia/Tehran'));
         $lastupdate = jdate('Y/m/d H:i:s', $dateTime->getTimestamp());
     }
-    if ($DataUserOut['data_limit'] != null && $DataUserOut['used_traffic'] != null) {
-        $Percent = ($DataUserOut['data_limit'] - $DataUserOut['used_traffic']) * 100 / $DataUserOut['data_limit'];
-    } else {
-        $Percent = "100";
-    }
-    if ($Percent < 0)
-        $Percent = -($Percent);
-    $Percent = round($Percent, 2);
+    $Percent = $trafficRemaining['percent'];
     $textdisorder .= sprintf($textbotlang['users']['status']['summary'], $status_var, $LastTraffic, $usedTrafficGb, $RemainingVolume, $Percent, $expirationDate, $day, $DataUserOut['subscription_url'], $lastonline, $lastupdate, $DataUserOut['sub_last_user_agent']);
     foreach ($admin_ids as $admin) {
         $adminrulecheck = select("admin", "*", "id_admin", $admin, "select");
@@ -3113,8 +3100,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     #-------------[ data_limit ]----------------#
     $LastTraffic = $DataUserOut['data_limit'] ? formatBytes($DataUserOut['data_limit']) : $textbotlang['users']['status']['unlimited'];
     #---------------[ RemainingVolume ]--------------#
-    $output = $DataUserOut['data_limit'] - $DataUserOut['used_traffic'];
-    $RemainingVolume = $DataUserOut['data_limit'] ? formatBytes($output) : $textbotlang['common']['labels']['unlimitedShort'];
+    $trafficRemaining = serviceRemainingTraffic($DataUserOut);
+    $RemainingVolume = $trafficRemaining['bytes'] !== null ? formatBytes($trafficRemaining['bytes']) : $textbotlang['common']['labels']['unlimitedShort'];
     #---------------[ used_traffic ]--------------#
     $usedTrafficGb = $DataUserOut['used_traffic'] ? formatBytes($DataUserOut['used_traffic']) : $textbotlang['users']['status']['notConsumed'];
     #--------------[ day ]---------------#
@@ -6803,7 +6790,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6812,7 +6799,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6864,7 +6851,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6873,7 +6860,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6929,7 +6916,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $data = " | {$row['note']}";
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . $data . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
@@ -6938,7 +6925,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         while ($row = ($result)->fetch(PDO::FETCH_ASSOC)) {
             $keyboardlists['inline_keyboard'][] = [
                 [
-                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status']),
+                    'text' => "✨" . $row['username'] . "✨" . serviceStatusChip($row['Status'], $row['panel_status'] ?? null),
                     'callback_data' => "extend_" . $row['id_invoice']
                 ],
             ];
