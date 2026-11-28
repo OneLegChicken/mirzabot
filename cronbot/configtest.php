@@ -14,7 +14,7 @@ $deleteExpiredTests->execute([
     ':delete_before' => time() - 72 * 60 * 60,
 ]);
 
-$stmt = $pdo->prepare("SELECT * FROM invoice WHERE status != 'disabled' AND name_product = :test_name ORDER BY RAND() LIMIT 15");
+$stmt = $pdo->prepare("SELECT * FROM invoice WHERE status NOT IN ('disabled', 'archivedbyuser') AND name_product = :test_name ORDER BY RAND() LIMIT 15");
 $stmt->execute([':test_name' => $testServiceName]);
 while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $username = trim($result['username']);
@@ -30,7 +30,7 @@ while ($result = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
     $isNodeX = in_array(strtolower((string) ($panel['type'] ?? '')), ['nodex', 'guard', 'solidlayer'], true);
     if ($isNodeX) {
-        $markEnded = $pdo->prepare("UPDATE invoice SET Status = 'disabled', test_ended_at = :ended_at WHERE id_invoice = :id_invoice AND (test_ended_at IS NULL OR test_ended_at = '')");
+        $markEnded = $pdo->prepare("UPDATE invoice SET Status = 'disabled', test_ended_at = :ended_at WHERE id_invoice = :id_invoice AND Status <> 'archivedbyuser' AND (test_ended_at IS NULL OR test_ended_at = '')");
         $markEnded->execute([':ended_at' => time(), ':id_invoice' => $result['id_invoice']]);
         if ($markEnded->rowCount() === 0) {
             continue;

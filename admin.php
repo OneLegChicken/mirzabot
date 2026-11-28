@@ -2819,25 +2819,25 @@ elseif ($datain == "systemsms") {
     } elseif (in_array($marzban_list_get['type'], ["rebecca", "nexora", "wg_mate", "nodex", "guard", "solidlayer"])) {
         $Check_connection = $marzban_list_get['type'] == "nexora" ? request_nexora($marzban_list_get['name_panel'], "GET", '/me') : ($marzban_list_get['type'] == "wg_mate" ? request_wgmate($marzban_list_get['name_panel'], "GET", '/auth/me') : (in_array($marzban_list_get['type'], ["nodex", "guard", "solidlayer"], true) ? request_nodex($marzban_list_get['name_panel'], "GET", '/admins/current') : Get_System_Stats_rebecca($marzban_list_get['name_panel'])));
         if (empty($Check_connection['error']) && (empty($Check_connection['status']) || $Check_connection['status'] < 400)) {
-            $ListSell = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = ? AND name_product != ?");
+            $ListSell = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status IN ('send_on_hold', 'archivedbyuser')) AND Service_location = ? AND name_product != ?");
             $ListSell->bindValue(1, $marzban_list_get['name_panel'], PDO::PARAM_STR);
             $ListSell->bindValue(2, $textbotlang['common']['labels']['testServiceName'], PDO::PARAM_STR);
             $ListSell->execute();
             $ListSell = number_format($ListSell->fetch(PDO::FETCH_ASSOC)['COUNT(*)'] ?? 0);
-            $ListSellSum = $pdo->prepare("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') AND Service_location = ? AND name_product != ?");
+            $ListSellSum = $pdo->prepare("SELECT SUM(price_product) FROM invoice WHERE (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status IN ('send_on_hold', 'archivedbyuser')) AND Service_location = ? AND name_product != ?");
             $ListSellSum->bindValue(1, $marzban_list_get['name_panel'], PDO::PARAM_STR);
             $ListSellSum->bindValue(2, $textbotlang['common']['labels']['testServiceName'], PDO::PARAM_STR);
             $ListSellSum->execute();
             $ListSellSUM = number_format($ListSellSum->fetch(PDO::FETCH_ASSOC)['SUM(price_product)'] ?? 0);
             $trafficSoldGb = 0.0;
-            $trafficSales = $pdo->prepare("SELECT Volume FROM invoice WHERE Status IN ('active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold') AND Service_location = ? AND name_product != ?");
+            $trafficSales = $pdo->prepare("SELECT Volume FROM invoice WHERE Status IN ('active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold', 'archivedbyuser') AND Service_location = ? AND name_product != ?");
             $trafficSales->execute([$marzban_list_get['name_panel'], $textbotlang['common']['labels']['testServiceName']]);
             while ($trafficSale = $trafficSales->fetch(PDO::FETCH_ASSOC)) {
                 if (is_numeric($trafficSale['Volume'] ?? null)) {
                     $trafficSoldGb += max(0, (float) $trafficSale['Volume']);
                 }
             }
-            $trafficRenewals = $pdo->prepare("SELECT so.type, so.value FROM service_other so WHERE so.type IN ('extend_user', 'extra_user') AND COALESCE(so.status, '') NOT IN ('unpaid', 'failed') AND EXISTS (SELECT 1 FROM invoice i WHERE i.username = so.username AND i.id_user = so.id_user AND i.Status IN ('active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold') AND i.Service_location = ? AND i.name_product != ?)");
+            $trafficRenewals = $pdo->prepare("SELECT so.type, so.value FROM service_other so WHERE so.type IN ('extend_user', 'extra_user') AND COALESCE(so.status, '') NOT IN ('unpaid', 'failed') AND EXISTS (SELECT 1 FROM invoice i WHERE i.username = so.username AND i.id_user = so.id_user AND i.Status IN ('active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold', 'archivedbyuser') AND i.Service_location = ? AND i.name_product != ?)");
             $trafficRenewals->execute([$marzban_list_get['name_panel'], $textbotlang['common']['labels']['testServiceName']]);
             while ($trafficRenewal = $trafficRenewals->fetch(PDO::FETCH_ASSOC)) {
                 $renewalData = json_decode((string) $trafficRenewal['value'], true);

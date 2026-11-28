@@ -1087,7 +1087,6 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                     ['text' => $textbotlang['users']['extraVolume']['sellextra'], 'callback_data' => 'Extra_volume_' . $username],
                 ],
                 [
-                    ['text' => $textbotlang['keyboard']['deleteService'], 'callback_data' => 'removeauto-' . $username],
                     ['text' => $textbotlang['users']['extraTime']['title'], 'callback_data' => 'Extra_time_' . $username],
                 ],
                 [
@@ -1095,15 +1094,23 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 ]
             ]
         ];
+        if (in_array($status, ['expired', 'limited'], true)) {
+            array_unshift($keyboardsetting['inline_keyboard'][1], [
+                'text' => $textbotlang['users']['status']['archiveButton'],
+                'callback_data' => 'removeauto-' . $username,
+                'style' => 'danger',
+            ]);
+        }
+        $supportsExtraTime = $statustimeextra !== 'offtimeextraa' && !in_array($marzban['type'], ['ibsng', 'mikrotik'], true);
+        if (!$supportsExtraTime) {
+            array_pop($keyboardsetting['inline_keyboard'][1]);
+        }
         if ($marzban['type'] == "ibsng" || $marzban['type'] == "mikrotik") {
-            unset($keyboardsetting['inline_keyboard'][1][1]);
             unset($keyboardsetting['inline_keyboard'][0]);
         }
-        if ($statustimeextra == "offtimeextraa")
-            unset($keyboardsetting['inline_keyboard'][1][1]);
         if ($marzbanstatusextra == "offextra")
             unset($keyboardsetting['inline_keyboard'][0][1]);
-        $keyboardsetting['inline_keyboard'] = array_values($keyboardsetting['inline_keyboard']);
+        $keyboardsetting['inline_keyboard'] = array_values(array_filter($keyboardsetting['inline_keyboard']));
         $keyboardsetting = json_encode($keyboardsetting);
     } else {
         $marzbancount = select("marzban_panel", "*", "status", "active", "count");
@@ -1349,25 +1356,86 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         ]);
         @unlink($urlimage);
     }
-} elseif (preg_match('/removeauto-(\w+)/', $datain, $dataget)) {
-    $id_invoice = $dataget[1];
+} elseif (preg_match('/\A(removeauto|archiveok)-([A-Za-z0-9_]+)\z/', $datain, $dataget)) {
+    [, $archiveAction, $id_invoice] = $dataget;
     $nameloc = select("invoice", "*", "id_invoice", $id_invoice, "select");
-    if (!$nameloc || $nameloc['id_user'] != $from_id) {
+    if ($Chat_type !== 'private' || !invoiceBelongsToUser($nameloc, $from_id)) {
         return;
     }
-    $marzban_list_get = select("marzban_panel", "*", "name_panel", $nameloc['Service_location'], "select");
-    $ManagePanel->RemoveUser($nameloc['Service_location'], $nameloc['username']);
-    update('invoice', 'status', 'removebyuser', 'id_invoice', $id_invoice);
-    $tetremove = sprintf($textbotlang['Admin']['reportgroup']['userDeletedService'], $nameloc['username']);
+    $statusText = $textbotlang['users']['status'];
+    if (!in_array($nameloc['Status'], ['active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold'], true)) {
+        sendmessage($from_id, $statusText['infoUnavailable'], null, 'HTML');
+        return;
+    }
+
+    $service = $ManagePanel->DataUser($nameloc['Service_location'], $nameloc['username'], $nameloc);
+    $panelStatus = $service['status'] ?? 'Unsuccessful';
+    if (!in_array($panelStatus, ['expired', 'limited'], true)) {
+        $notice = $panelStatus === 'Unsuccessful' ? $statusText['panelNotConnected'] : $statusText['archiveIneligible'];
+        sendmessage($from_id, $notice, null, 'HTML');
+        return;
+    }
+
+    $name = htmlspecialchars($nameloc['username'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if ($archiveAction === 'removeauto') {
+        $expiry = $service['expire'] ?? null;
+        if ($panelStatus === 'expired') {
+            $remainingTime = '0 ' . trim($statusText['min']);
+        } elseif (is_numeric($expiry) && (int) $expiry > 0) {
+            $totalMinutes = (int) ceil(max(0, (int) $expiry - time()) / 60);
+            $days = intdiv($totalMinutes, 1440);
+            $hours = intdiv($totalMinutes % 1440, 60);
+            $minutes = $totalMinutes % 60;
+            $remainingTime = implode(' ', array_filter([
+                $days > 0 ? $days . ' ' . trim($statusText['day']) : '',
+                $hours > 0 ? $hours . ' ' . trim($statusText['hour']) : '',
+                $minutes > 0 || $totalMinutes === 0 ? $minutes . ' ' . trim($statusText['min']) : '',
+            ]));
+        } else {
+            $hasNoExpiry = array_key_exists('expire', $service) && ($expiry === null || (is_numeric($expiry) && (int) $expiry === 0));
+            $remainingTime = $hasNoExpiry ? $statusText['unlimited'] : $statusText['unknown'];
+        }
+
+        $quota = $service['data_limit'] ?? null;
+        $used = $service['used_traffic'] ?? null;
+        $remainingVolume = $statusText['unknown'];
+        $hasNoQuota = array_key_exists('data_limit', $service) && ($quota === null || (is_numeric($quota) && (float) $quota === 0.0));
+        if ($hasNoQuota && $panelStatus !== 'limited') {
+            $remainingVolume = $statusText['unlimited'];
+        } elseif (is_numeric($quota) && (float) $quota > 0 && is_numeric($used) && (float) $used >= 0) {
+            $remainingVolume = formatBytes(max(0, (float) $quota - (float) $used));
+        }
+
+        $preview = sprintf($statusText['archivePreview'], $name, $remainingTime, $remainingVolume);
+        $confirmation = json_encode(['inline_keyboard' => [[
+            ['text' => $statusText['archiveConfirm'], 'callback_data' => 'archiveok-' . $id_invoice, 'style' => 'danger'],
+            ['text' => $textbotlang['keyboard']['cancelOperation'], 'callback_data' => 'product_' . $id_invoice],
+        ]]]);
+        Editmessagetext($from_id, $message_id, $preview, $confirmation, 'HTML');
+        return;
+    }
+
+    // Archive the service while retaining its invoice and related payment records.
+    $archive = $pdo->prepare("UPDATE invoice SET Status = 'archivedbyuser'
+        WHERE id_invoice = ? AND id_user = ? AND Status = ? AND username = ? AND Service_location = ?");
+    $archive->execute([$id_invoice, $from_id, $nameloc['Status'], $nameloc['username'], $nameloc['Service_location']]);
+    if ($archive->rowCount() !== 1) {
+        sendmessage($from_id, $statusText['archiveIneligible'], null, 'HTML');
+        return;
+    }
+    clearSelectCache('invoice');
+    $backToServices = json_encode(['inline_keyboard' => [[
+        ['text' => $statusText['backlist'], 'callback_data' => 'backorder'],
+    ]]]);
+    Editmessagetext($from_id, $message_id, $statusText['archiveDone'], $backToServices, 'HTML');
     if (strlen($setting['Channel_Report']) > 0) {
         telegram('sendmessage', [
             'chat_id' => $setting['Channel_Report'],
             'message_thread_id' => $otherreport,
-            'text' => $tetremove,
-            'parse_mode' => "HTML"
+            'text' => sprintf($statusText['archiveReport'], $name),
+            'parse_mode' => 'HTML',
         ]);
     }
-    sendmessage($from_id, $textbotlang['users']['status']['deletedSuccess'], null, 'html');
 } elseif (preg_match('/config_(\w+)/', $datain, $dataget) || strpos($text, "/link ") !== false) {
     if (!empty($text) && $text[0] == "/") {
         $id_invoice = explode(' ', $text)[1];

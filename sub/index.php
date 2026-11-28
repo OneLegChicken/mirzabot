@@ -22,7 +22,7 @@ try {
         : select("invoice", "*", "id_invoice", $token, "select");
     if (!is_array($nameloc)
         || (!$isNodeXToken && isset($nameloc['subscription_token']))
-        || !in_array($nameloc['Status'], ['active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold'], true)) {
+        || !in_array($nameloc['Status'], ['active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold', 'archivedbyuser'], true)) {
         http_response_code(404);
         echo "ERROR!";
         exit;
