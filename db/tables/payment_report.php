@@ -18,7 +18,8 @@ return [
         fee_amount BIGINT NOT NULL DEFAULT 0,
         gross_amount BIGINT NOT NULL DEFAULT 0,
         order_type VARCHAR(20) NULL,
-        fulfillment_status VARCHAR(16) NULL
+        fulfillment_status VARCHAR(16) NULL,
+        receipt_file_id VARCHAR(512) NULL
         SQL,
     'ensureUtf8mb4' => true,
     'columns' => [
@@ -31,5 +32,6 @@ return [
         ['gross_amount', '0', 'BIGINT NOT NULL DEFAULT 0'],
         ['order_type', null, 'VARCHAR(20) NULL'],
         ['fulfillment_status', null, 'VARCHAR(16) NULL'],
+        ['receipt_file_id', null, 'VARCHAR(512) NULL'],
     ],
 ];

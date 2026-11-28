@@ -96,6 +96,11 @@ function trackedPaymentType(array $order): string
     };
 }
 
+function recordedPaymentAmount($base, $fee, $gross): float
+{
+    return (float) $gross > 0 ? (float) $gross : (float) $base + (float) $fee;
+}
+
 function customerOrderText(array $order, array $labels): string
 {
     $esc = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -103,8 +108,7 @@ function customerOrderText(array $order, array $labels): string
     if ($order['source'] === 'payment') {
         $type = trackedPaymentType($order);
         $code = $order['id_order'];
-        $amount = (int) $order['gross_amount'] > 0
-            ? $order['gross_amount'] : (float) $order['payment_price'] + (float) $order['fee_amount'];
+        $amount = recordedPaymentAmount($order['payment_price'], $order['fee_amount'], $order['gross_amount']);
         $method = match ($order['Payment_Method']) {
             'DigiPay credit' => $labels['digipay'],
             'cart to cart' => $labels['card'],
@@ -169,12 +173,12 @@ function customerOrderReceiptKeyboard(array $labels, int $paymentId): string
     ]]]);
 }
 
-function saveCustomerPaymentReceipt(PDO $pdo, array $payment, string $owner, ?string $receiptReference = null): bool
+function saveCustomerPaymentReceipt(PDO $pdo, array $payment, string $owner, ?string $receiptReference = null, ?string $receiptFileId = null): bool
 {
     $statement = $pdo->prepare("UPDATE payment_report SET payment_Status = 'waiting', at_updated = ?,
-            dec_not_confirmed = COALESCE(?, dec_not_confirmed)
+            dec_not_confirmed = COALESCE(?, dec_not_confirmed), receipt_file_id = COALESCE(?, receipt_file_id)
         WHERE id = ? AND id_user = ? AND Payment_Method = ? AND payment_Status IN ('Unpaid', 'waiting')");
-    $statement->execute([date('Y/m/d H:i:s'), $receiptReference, $payment['id'], $owner, $payment['Payment_Method']]);
+    $statement->execute([date('Y/m/d H:i:s'), $receiptReference, $receiptFileId, $payment['id'], $owner, $payment['Payment_Method']]);
     clearSelectCache('payment_report');
     return $statement->rowCount() === 1;
 }

@@ -1999,7 +1999,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             $service_order_id = $pdo->lastInsertId();
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
             update("user", "Processing_value_one", $service_order_id, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['sell']['noCredit'], $step_payment, 'HTML');
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $pricelastextend);
+            sendmessage($from_id, $checkoutText, $checkoutKeyboard, 'HTML');
             step('get_step_payment_service', $from_id);
             return;
         }
@@ -2294,7 +2296,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             $service_order_id = $pdo->lastInsertId();
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
             update("user", "Processing_value_one", $service_order_id, "id", $from_id);
-            Editmessagetext($from_id, $message_id, $textbotlang['users']['sell']['noCredit'], $step_payment);
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $volume);
+            Editmessagetext($from_id, $message_id, $checkoutText, $checkoutKeyboard);
             step('get_step_payment_service', $from_id);
             return;
         }
@@ -2496,7 +2500,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             if (intval($Pricechange) != 0) {
                 $Balance_prim = $Pricechange - $user['Balance'];
                 update("user", "Processing_value", $Balance_prim, "id", $from_id);
-                Editmessagetext($from_id, $message_id, $textbotlang['users']['sell']['noCredit'], $step_payment);
+                [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                    $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $Pricechange);
+                Editmessagetext($from_id, $message_id, $checkoutText, $checkoutKeyboard);
                 step('get_step_payment', $from_id);
                 return;
             }
@@ -2852,7 +2858,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
                 $service_order_id = $pdo->lastInsertId();
                 update("user", "Processing_value", $Balance_prim, "id", $from_id);
                 update("user", "Processing_value_one", $service_order_id, "id", $from_id);
-                Editmessagetext($from_id, $message_id, $textbotlang['users']['sell']['noCredit'], $step_payment);
+                [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                    $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $pricelasttime);
+                Editmessagetext($from_id, $message_id, $checkoutText, $checkoutKeyboard);
                 step('get_step_payment_service', $from_id);
                 return;
             }
@@ -4239,7 +4247,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             update("invoice", "payable_amount", $Balance_prim, "id_invoice", $randomString);
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
             update("user", "Processing_value_one", $randomString, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['sell']['noCredit'], $step_payment, 'HTML');
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $priceproduct);
+            sendmessage($from_id, $checkoutText, $checkoutKeyboard, 'HTML');
             step('get_step_payment_buy', $from_id);
         }
         return;
@@ -4806,7 +4816,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             if ($Balance_prims <= 1)
                 $Balance_prims = 0;
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['sell']['noCredit'], $step_payment, 'HTML');
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $priceproduct);
+            sendmessage($from_id, $checkoutText, $checkoutKeyboard, 'HTML');
             step('get_step_payment', $from_id);
             return;
         }
@@ -4968,42 +4980,44 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         }
     }
     update("user", "Processing_value", $balancelast, "id", $from_id);
-    sendmessage($from_id, $textbotlang['users']['Balance']['selectPayment'], $step_payment, 'HTML');
+    [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+        $textbotlang['users']['Balance']['selectPayment'], $step_payment, $balancelast);
+    sendmessage($from_id, $checkoutText, $checkoutKeyboard, 'HTML');
     step('get_step_payment', $from_id);
 } elseif (in_array($user['step'], ["get_step_payment", "get_step_payment_buy", "get_step_payment_service"]) && in_array($datain, ["cart_to_offline", "digipaycredit", "aqayepardakht", "zarinpal", "variza", "plisio", "nowpayment", "iranpay1", "iranpay2", "iranpay4", "iranpay3", "digitaltron", "startelegrams"])) {
+    $checkoutTotal = null;
     if ($user['step'] == "get_step_payment_buy") {
         $pending_order = select("invoice", "*", "id_invoice", $user['Processing_value_one'], "select");
-        if ($pending_order == false || $pending_order['Status'] != "unpaid") {
+        if (!invoiceBelongsToUser($pending_order, $from_id) || $pending_order['Status'] !== 'unpaid') {
             sendmessage($from_id, $textbotlang['users']['sell']['restartFromStart'], $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
         $user['Processing_value'] = $pending_order['payable_amount'];
+        $checkoutTotal = (float) $pending_order['price_product'];
     } elseif ($user['step'] == "get_step_payment_service") {
         $pending_order = select("service_other", "*", "id", $user['Processing_value_one'], "select");
-        if ($pending_order == false || $pending_order['status'] != "unpaid") {
+        if (!invoiceBelongsToUser($pending_order, $from_id) || $pending_order['status'] !== 'unpaid') {
             sendmessage($from_id, $textbotlang['users']['sell']['restartFromStart'], $keyboard, 'HTML');
             step('home', $from_id);
             return;
         }
         $user['Processing_value'] = $pending_order['payable_amount'];
+        $checkoutTotal = (float) $pending_order['price'];
     }
     if ($datain == "digipaycredit") {
-        $qrFileId = trim((string) config_get('pay', 'digipaycredit_qr_file_id', '0'));
-        if (getPaySettingValue('digipaycredit_status', 'off') !== 'on' || $qrFileId === '' || $qrFileId === '0') {
-            sendmessage($from_id, 'درگاه پرداخت اعتباری در حال حاضر در دسترس نیست.', $step_payment, 'HTML');
-            return;
-        }
+        $checkoutLabels = $textbotlang['users']['checkout'];
         $base = (int) $user['Processing_value'];
-        $feePercent = max(0, min(100, (float) config_get('pay', 'digipaycredit_fee_percent', '0')));
-        $fee = (int) ceil($base * $feePercent / 100);
-        $gross = $base + $fee;
-        $minimum = (int) config_get('pay', 'minbalancedigipaycredit', '20000');
-        $maximum = (int) config_get('pay', 'maxbalancedigipaycredit', '1000000');
-        if ($gross < $minimum || $gross > $maximum) {
-            sendmessage($from_id, 'مبلغ نهایی پرداخت برای استفاده از درگاه اعتباری دیجی‌پی باید بین ' . number_format($minimum) . ' تا ' . number_format($maximum) . ' تومان باشد.' . "\n" . 'لطفاً برای مبالغ کمتر از ' . number_format($minimum) . ' تومان یا بیشتر از ' . number_format($maximum) . ' تومان، از سایر روش‌های پرداخت مانند کارت‌به‌کارت استفاده کنید.', null, 'HTML');
+        $quote = digipayCheckoutQuote($base);
+        $enabled = digipayCheckoutEnabled();
+        if (!$enabled || !$quote['eligible']) {
+            $intro = $enabled ? $textbotlang['users']['Balance']['selectPayment'] : $checkoutLabels['digipayUnavailable'];
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($checkoutLabels, $intro, $step_payment, $base, $checkoutTotal);
+            Editmessagetext($from_id, $message_id, $checkoutText, $checkoutKeyboard, 'HTML');
             return;
         }
+        $fee = $quote['fee'];
+        $gross = $quote['gross'];
         // invoice.id_payment and service_other.id_payment are VARCHAR(20).
         $orderId = bin2hex(random_bytes(10));
         $date = date('Y/m/d H:i:s');
@@ -5017,9 +5031,8 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
         }
         linkPaymentToOrder($orderId, $user);
         $terms = trim((string) config_get('pay', 'digipaycredit_help', ''));
-        $amountText = $fee > 0
-            ? "مبلغ سفارش: <b>" . number_format($base) . " تومان</b>\nکارمزد {$feePercent}%: <b>" . number_format($fee) . " تومان</b>\nمبلغ قابل پرداخت: <b>" . number_format($gross) . " تومان</b>"
-            : "مبلغ قابل پرداخت: <b>" . number_format($gross) . " تومان</b>";
+        $amountText = sprintf($checkoutLabels['remaining'], number_format($base)) . "\n"
+            . digipayCheckoutAmount($checkoutLabels, $quote);
         $termsText = ($terms !== '' ? htmlspecialchars($terms, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n\n" : '') . $amountText . "\n\nبا پذیرش شرایط، QR پرداخت نمایش داده می‌شود.";
         $termsKb = json_encode(['inline_keyboard' => [[['text' => 'قبول شرایط و نمایش QR', 'callback_data' => 'digipayaccept_' . $orderId, 'style' => 'primary']], [['text' => 'انصراف', 'callback_data' => 'digipaycancel_' . $orderId, 'style' => 'danger']]]], JSON_UNESCAPED_UNICODE);
         telegram('sendmessage', ['chat_id' => $from_id, 'text' => $termsText, 'reply_markup' => $termsKb, 'parse_mode' => 'HTML']);
@@ -5893,7 +5906,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     step('home', $from_id);
     $PaymentReport = select("payment_report", "*", "id_order", $user['Processing_value'], "select");
     if (!$PaymentReport || $PaymentReport['Payment_Method'] !== 'arze digital offline'
-        || !saveCustomerPaymentReceipt($pdo, $PaymentReport, (string) $from_id, "$text $caption")) {
+        || !saveCustomerPaymentReceipt($pdo, $PaymentReport, (string) $from_id, "$text $caption", $photo ? (string) $photoid : null)) {
         sendmessage($from_id, $textbotlang['users']['Balance']['restartPurchaseOrPay'], $keyboard, 'HTML');
         return;
     }
@@ -5997,7 +6010,7 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
     step('home', $from_id);
     $PaymentReport = select("payment_report", "*", "id_order", $user['Processing_value']);
     if (!$PaymentReport || !in_array($PaymentReport['Payment_Method'], ['cart to cart', 'DigiPay credit'], true)
-        || !saveCustomerPaymentReceipt($pdo, $PaymentReport, (string) $from_id)) {
+        || !saveCustomerPaymentReceipt($pdo, $PaymentReport, (string) $from_id, receiptFileId: (string) $photoid)) {
         sendmessage($from_id, $textbotlang['users']['orderTracking']['receiptUnavailable'], $keyboard, 'HTML');
         return;
     }
@@ -6353,7 +6366,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             }
             $Balance_prim = $volume - $user['Balance'];
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['sell']['noCredit'], $step_payment, 'HTML');
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $volume);
+            sendmessage($from_id, $checkoutText, $checkoutKeyboard, 'HTML');
             step('get_step_payment', $from_id);
             return;
         }
@@ -7032,7 +7047,9 @@ if ($text == "/start" || $datain == "start" || $text == "start") {
             }
             $Balance_prim = $prodcut['price_product'] - $user['Balance'];
             update("user", "Processing_value", $Balance_prim, "id", $from_id);
-            sendmessage($from_id, $textbotlang['users']['sell']['noCredit'], $step_payment, 'HTML');
+            [$checkoutText, $checkoutKeyboard] = paymentCheckoutView($textbotlang['users']['checkout'],
+                $textbotlang['users']['sell']['noCredit'], $step_payment, $Balance_prim, $prodcut['price_product']);
+            sendmessage($from_id, $checkoutText, $checkoutKeyboard, 'HTML');
             step('get_step_payment', $from_id);
             return;
         }

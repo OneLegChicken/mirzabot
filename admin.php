@@ -107,6 +107,52 @@ if ($adminrulecheck['rule'] != "administrator") {
         return;
     }
 }
+$openReceiptQueue = $datain === '' && $text === $textbotlang['keyboard']['pendingReceipts'];
+$receiptQueuePage = preg_match('/\Areceiptqueue:([1-9][0-9]{0,8})\z/', $datain, $receiptPage);
+$receiptQueueItem = preg_match('/\Areceiptopen:([1-9][0-9]{0,9})\z/', $datain, $receiptItem);
+$receiptBulkPreview = in_array($datain, ['receiptbulk', 'removeresid'], true);
+$receiptBulkConfirm = preg_match('/\Areceiptbulk:([a-f0-9]{24})\z/', $datain, $receiptConfirmation);
+if ($openReceiptQueue || $receiptQueuePage || $receiptQueueItem || $receiptBulkPreview || $receiptBulkConfirm) {
+    if ($adminrulecheck['rule'] !== 'administrator' || $Chat_type !== 'private') {
+        return;
+    }
+    require_once __DIR__ . '/admin_receipts.php';
+    if ($datain !== '') {
+        telegram('answerCallbackQuery', ['callback_query_id' => $callback_query_id]);
+    }
+    $receiptLabels = $textbotlang['Admin']['receiptQueue'];
+    if ($receiptQueueItem) {
+        openAdminReceipt($pdo, (int) $receiptItem[1], (string) $from_id, $textbotlang);
+    } elseif ($receiptBulkPreview) {
+        [$queueText, $queueKeyboard] = adminReceiptBulkPreview($pdo, $receiptLabels);
+        Editmessagetext($from_id, $message_id, $queueText, $queueKeyboard, 'HTML');
+    } elseif ($receiptBulkConfirm) {
+        try {
+            $rejected = rejectAdminReceiptSnapshot($pdo, $receiptConfirmation[1]);
+        } catch (Throwable $e) {
+            error_log('Could not reject the confirmed receipt queue.');
+            sendmessage($from_id, $receiptLabels['bulkFailed'], null, 'HTML');
+            return;
+        }
+        if ($rejected === null) {
+            [$queueText, $queueKeyboard] = adminReceiptBulkPreview($pdo, $receiptLabels, $receiptLabels['queueChanged']);
+        } else {
+            $queueText = sprintf($receiptLabels['bulkDone'], number_format($rejected));
+            $queueKeyboard = json_encode(['inline_keyboard' => [[
+                ['text' => $receiptLabels['backToQueue'], 'callback_data' => 'receiptqueue:1'],
+            ]]]);
+        }
+        Editmessagetext($from_id, $message_id, $queueText, $queueKeyboard, 'HTML');
+    } else {
+        [$queueText, $queueKeyboard] = adminReceiptQueueView($pdo, (int) ($receiptPage[1] ?? 1), $textbotlang);
+        if ($openReceiptQueue) {
+            sendmessage($from_id, $queueText, $queueKeyboard, 'HTML');
+        } else {
+            Editmessagetext($from_id, $message_id, $queueText, $queueKeyboard, 'HTML');
+        }
+    }
+    return;
+}
 $saveDigipayQr = static function (string $fileId) use ($pdo, $from_id, $adminnumber): void {
     $isRemoval = $fileId === '0';
     $timestamp = date('Y-m-d H:i:s');
@@ -7610,41 +7656,6 @@ elseif ($text == $textbotlang['keyboard']['hidePanelForUser'] && $adminrulecheck
     step("home", $from_id);
     [$wheelText, $wheelKeyboard] = wheelSettingsMenu();
     editFlowMessage($textbotlang['Admin']['price']['rewardSaved'] . "\n\n" . $wheelText, $wheelKeyboard);
-} elseif ($text == $textbotlang['keyboard']['pendingReceipts']) {
-    $sql = "SELECT * FROM payment_report WHERE Payment_Method IN ('cart to cart', 'DigiPay credit') AND payment_Status = 'waiting'";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-    $list_payment = $stmt->fetchAll();
-    $list_payment_count = count($list_payment);
-    if ($list_payment_count == 0) {
-        sendmessage($from_id, $textbotlang['Admin']['Payment']['noPending'], $list_payment, 'HTML');
-        return;
-    }
-    foreach ($list_payment as $payment) {
-        $list_payment['inline_keyboard'][] = [
-            ['text' => $payment['id_user'], 'callback_data' => "checkpay"]
-        ];
-        $list_payment['inline_keyboard'][] = [
-            ['text' => "✅", 'callback_data' => "Confirm_pay_{$payment['id_order']}"],
-            ['text' => "❌", 'callback_data' => "reject_pay_{$payment['id_order']}"],
-            ['text' => "📝", 'callback_data' => "showinfopay_{$payment['id_order']}"],
-            ['text' => "🗑", 'callback_data' => "removeresid_{$payment['id_order']}"],
-        ];
-        $list_payment['inline_keyboard'][] = [
-            ['text' => "💸💸💸💸💸💸💸💸💸", 'callback_data' => "checkpay"]
-        ];
-    }
-    $list_payment['inline_keyboard'][] = [
-        ['text' => $textbotlang['keyboard']['deleteAllReceipts'], 'callback_data' => "removeresid"]
-    ];
-    $list_payment = json_encode($list_payment);
-    sendmessage($from_id, $textbotlang['Admin']['Payment']['pendingIntro'], $list_payment, 'HTML');
-} elseif ($datain == "removeresid") {
-    deletemessage($from_id, $message_id);
-    sendmessage($from_id, $textbotlang['Admin']['Payment']['allReceiptsDeleted'], $list_payment, 'HTML');
-    $sql = "UPDATE payment_report SET payment_Status = 'reject',dec_not_confirmed = 'remove_all' WHERE Payment_Method IN ('cart to cart', 'DigiPay credit') AND payment_Status = 'waiting'";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute();
 } elseif (preg_match('/showinfopay_(\w+)/', $datain, $dataget)) {
     $idorder = $dataget[1];
     $paymentUser = select("payment_report", "*", "id_order", $idorder, "select");

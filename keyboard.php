@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/payment_checkout.php';
 $setting = config_all('setting');
 $textbotlang = languagechange();
 //-----------------------------[  text panel  ]-------------------------------
@@ -281,7 +282,7 @@ $payment_status_nowpayment = getPaySettingValue("statusnowpayment");
 $step_payment = [
     'inline_keyboard' => []
 ];
-if (getPaySettingValue('digipaycredit_status', 'off') === 'on' && trim((string) getPaySettingValue('digipaycredit_qr_file_id', '0')) !== '' && getPaySettingValue('digipaycredit_qr_file_id', '0') !== '0') {
+if (digipayCheckoutEnabled()) {
     $step_payment['inline_keyboard'][] = [
         ['text' => 'پرداخت اعتباری با دیجی‌پی', 'callback_data' => 'digipaycredit', 'style' => 'primary']
     ];
