@@ -1190,9 +1190,7 @@ $keyboardtypepanel = json_encode([
             ['text' => "Nexora", 'callback_data' => 'typepanel#nexora']
         ],
         [
-            ['text' => "WG-Mate", 'callback_data' => 'typepanel#wg_mate']
-        ],
-        [
+            ['text' => "WG-Mate", 'callback_data' => 'typepanel#wg_mate'],
             ['text' => $textbotlang['keyboard']['guard'] ?? 'NodeX', 'callback_data' => 'typepanel#nodex']
         ],
         [
