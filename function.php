@@ -702,26 +702,52 @@ function serviceStatusChip($status, $panelStatus = null)
     return $chips[$panelStatus ?? $status] ?? '';
 }
 
-function rememberInvoicePanelStatus(array $invoice, $status): void
+const CUSTOMER_VISIBLE_SERVICE_STATUSES = ['active', 'end_of_time', 'end_of_volume', 'sendedwarn', 'send_on_hold'];
+
+function invoicePanelStatus(array $invoice): string
+{
+    return $invoice['panel_status'] ?? match ($invoice['Status']) {
+        'active', 'sendedwarn' => 'active',
+        'end_of_time' => 'expired',
+        'end_of_volume' => 'limited',
+        'send_on_hold' => 'on_hold',
+        default => 'Unknown',
+    };
+}
+
+function rememberInvoicePanelSnapshot(array $invoice, array $service): void
 {
     global $pdo;
-    if (!array_key_exists('panel_status', $invoice)
-        || $invoice['panel_status'] === $status
+    $status = $service['status'] ?? null;
+    if (!array_key_exists('panel_expires_at', $invoice)
         || !in_array($status, ['active', 'expired', 'limited', 'on_hold', 'disabled', 'deactivev'], true)) {
         return;
     }
 
-    $previous = $invoice['panel_status'];
+    $previousStatus = $invoice['panel_status'];
+    $previousExpiry = $invoice['panel_expires_at'] === null ? null : (int) $invoice['panel_expires_at'];
+    $expiry = $previousExpiry;
+    if (array_key_exists('expire', $service)) {
+        if ($service['expire'] === null) {
+            $expiry = 0;
+        } elseif (is_numeric($service['expire']) && $service['expire'] >= 0) {
+            $expiry = (int) $service['expire'];
+        }
+    }
+    if ($previousStatus === $status && $previousExpiry === $expiry) {
+        return;
+    }
+
     try {
-        $statement = $pdo->prepare("UPDATE invoice SET panel_status = ?
+        $statement = $pdo->prepare("UPDATE invoice SET panel_status = ?, panel_expires_at = ?
             WHERE id_invoice = ? AND Service_location = ? AND username = ?
-              AND (panel_status = ? OR (panel_status IS NULL AND ? IS NULL))");
-        $statement->execute([$status, $invoice['id_invoice'], $invoice['Service_location'], $invoice['username'], $previous, $previous]);
+              AND panel_status <=> ? AND panel_expires_at <=> ?");
+        $statement->execute([$status, $expiry, $invoice['id_invoice'], $invoice['Service_location'], $invoice['username'], $previousStatus, $previousExpiry]);
         if ($statement->rowCount() > 0) {
             clearSelectCache('invoice');
         }
     } catch (PDOException $e) {
-        error_log('Could not save the last known service status.');
+        error_log('Could not save the last known service status and expiry.');
     }
 }
 

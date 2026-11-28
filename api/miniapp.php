@@ -111,7 +111,7 @@ $action = $data['actions'] ?? '';
 
 function mini_invoices(array $data, string $method): void
 {
-    global $pdo, $textbotlang, $ManagePanel;
+    global $pdo, $textbotlang;
 
     if ($method !== "GET") {
         echo json_encode([
@@ -125,48 +125,42 @@ function mini_invoices(array $data, string $method): void
         $limit = 10;
     $page = $data['page'];
     $user_id = $data['user_id'];
-    $username = $data['q'];
-    $offset = ($page - 1) * $limit;
-    if ($username != null) {
-        $querywhere = " AND username LIKE :username";
-    } else {
-        $querywhere = "";
+    $search = $data['q'];
+    $conditions = "id_user = :user_id AND Status IN ('" . implode("','", CUSTOMER_VISIBLE_SERVICE_STATUSES) . "')";
+    $params = ['user_id' => $user_id];
+    if ($search !== null) {
+        $conditions .= " AND username LIKE :username";
+        $params['username'] = "%$search%";
     }
-    $countStmt = $pdo->prepare("SELECT COUNT(*) as total FROM invoice WHERE id_user = :user_id AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') $querywhere");
-    $countStmt->bindValue(':user_id', $user_id);
-    if ($username != null) {
-        $username = "%$username%";
-        $countStmt->bindValue(':username', $username, PDO::PARAM_STR);
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM invoice WHERE $conditions");
+    $countStmt->execute($params);
+    $totalItems = (int) $countStmt->fetchColumn();
+    $totalPages = (int) ceil($totalItems / $limit);
+
+    $stmt = $pdo->prepare("SELECT username, note, Status, panel_status, panel_expires_at
+        FROM invoice WHERE $conditions ORDER BY time_sell DESC, id_invoice DESC LIMIT :limit OFFSET :offset");
+    foreach ($params as $name => $value) {
+        $stmt->bindValue(':' . $name, $value, PDO::PARAM_STR);
     }
-    $countStmt->execute();
-    $totalItems = $countStmt->fetchColumn();
-    $totalPages = ceil($totalItems / $limit);
-    $stmt = $pdo->prepare("SELECT username,note,Service_location FROM invoice WHERE id_user = :user_id AND (status = 'active' OR status = 'end_of_time'  OR status = 'end_of_volume' OR status = 'sendedwarn' OR Status = 'send_on_hold') $querywhere  ORDER BY time_sell DESC LIMIT :limit OFFSET :offset ");
-    $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-    if ($username != null) {
-        $username = "%$username%";
-        $stmt->bindValue(':username', $username, PDO::PARAM_STR);
-    }
+    $stmt->bindValue(':offset', ($page - 1) * $limit, PDO::PARAM_INT);
     $stmt->execute();
-    $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $labels = $textbotlang['common']['labels'];
     $datauser = [];
-    if (is_array($invoices)) {
-        foreach ($invoices as $invoice) {
-            $DataUserOut = $ManagePanel->DataUser($invoice['Service_location'], $invoice['username']);
-            if ($DataUserOut['status'] == "Unsuccessful") {
-                $expire = $textbotlang['common']['labels']['unknown'];
-            } else {
-                $expire = $DataUserOut['expire'] ? jdate('Y/m/d', $DataUserOut['expire']) : $textbotlang['common']['labels']['unlimited'];
-            }
-            $datauser[] = [
-                'username' => $invoice['username'],
-                'status' => $DataUserOut['status'],
-                'expire' => $expire,
-                'note' => $invoice['note']
-            ];
-        }
+    while ($invoice = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $expiry = $invoice['panel_expires_at'] === null ? null : (int) $invoice['panel_expires_at'];
+        $datauser[] = [
+            'username' => $invoice['username'],
+            'status' => invoicePanelStatus($invoice),
+            'expire' => match ($expiry) {
+                null => $labels['unknown'],
+                0 => $labels['unlimited'],
+                default => jdate('Y/m/d', $expiry),
+            },
+            'note' => $invoice['note'],
+        ];
     }
     echo json_encode([
         'status' => true,
@@ -220,6 +214,7 @@ function mini_service(array $data, string $method): void
             ]);
             return;
         }
+        rememberInvoicePanelSnapshot($invoice, $DataUserOut);
         $data_limit_bytes = is_numeric($DataUserOut['data_limit']) ? (float) $DataUserOut['data_limit'] : 0;
         $used_traffic_bytes = is_numeric($DataUserOut['used_traffic']) ? (float) $DataUserOut['used_traffic'] : 0;
         $remaining_traffic_bytes = max($data_limit_bytes - $used_traffic_bytes, 0);

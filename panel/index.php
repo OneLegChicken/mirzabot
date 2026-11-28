@@ -9,6 +9,7 @@ $totalRevenue = 0;
 $activeNow = 0;
 $pendingPay = 0;
 $txToday = 0;
+$salesStatuses = "('active','end_of_time','end_of_volume','sendedwarn','send_on_hold','archivedbyuser')";
 
 try {
     $totalUsers = db_count($pdo, "SELECT COUNT(*) FROM user");
@@ -17,7 +18,7 @@ try {
 }
 
 try {
-    $totalRevenue = (int) db_query($pdo, "SELECT COALESCE(SUM(price_product),0) FROM invoice WHERE Status IN ('active','end_of_time','end_of_volume','sendedwarn','send_on_hold')")->fetchColumn();
+    $totalRevenue = (int) db_query($pdo, "SELECT COALESCE(SUM(price_product),0) FROM invoice WHERE Status IN $salesStatuses")->fetchColumn();
     $activeNow = db_count($pdo, "SELECT COUNT(*) FROM invoice WHERE Status='active'");
 } catch (Exception $e) {
 }
@@ -46,7 +47,7 @@ for ($slot = 0; $slot < $chartCount; $slot++) {
 }
 $salesAmount = $salesCount = $paymentAmount = $newUsers = $chartBuckets;
 try {
-    $rows = db_fetchAll($pdo, "SELECT time_sell, price_product FROM invoice WHERE CAST(time_sell AS UNSIGNED) >= ? AND Status IN ('active','end_of_time','end_of_volume','sendedwarn','send_on_hold') AND name_product != ?", [$chartStart, $textbotlang['common']['labels']['testServiceName']]);
+    $rows = db_fetchAll($pdo, "SELECT time_sell, price_product FROM invoice WHERE CAST(time_sell AS UNSIGNED) >= ? AND Status IN $salesStatuses AND name_product != ?", [$chartStart, $textbotlang['common']['labels']['testServiceName']]);
     foreach ($rows as $row) {
         $slot = date($chartKey, (int) $row['time_sell']);
         if (isset($salesCount[$slot])) {
